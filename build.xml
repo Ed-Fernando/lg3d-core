@@ -1,0 +1,1121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project basedir="." default="all" name="lg3d-core">
+
+    <property name="top.dir" location=".."/>
+    <property name="current.dir" location="."/>
+    <!-- Override core.dir in case the lg3d-core directory has a different name -->
+    <property name="core.dir" location="."/>
+
+    <!-- Use my-build.properties to override default values in build.properties -->
+    <property file="my.build.properties"/>
+    <property file="build.properties"/>
+
+    <property name="project.name" value="${ant.project.name}"/>
+
+    <taskdef resource="net/sf/antcontrib/antcontrib.properties">
+        <classpath>
+            <pathelement location="${build-import.dir}/ant-contrib.jar"/>
+        </classpath>
+    </taskdef>
+    
+    <!-- Do platform/x11/environment specific setup common to all tasks -->
+    <import file="${build-import.dir}/build-setup.xml"/>
+
+    <!-- X11 related rules -->
+    <import file="${build-import.dir}/build-x11.xml"/>
+
+    <!-- JUnit related rules -->
+    <import file="${build-import.dir}/build-junit.xml"/>
+
+    <!-- Build sibling/child projects -->
+    <import file="${build-import.dir}/build-demo-apps.xml"/>
+    <import file="${build-import.dir}/build-incubator.xml"/>
+    <import file="${build-import.dir}/build-wonderland.xml"/>
+    <import file="${build-import.dir}/build-awt.xml"/>
+
+    <target name="init" description="Initial set-up" unless="init.done">
+        <property name="init.done" value="true"/>
+
+        <mkdir dir="${build.platform.dir}"/>
+        <mkdir dir="${build.classes.dir}"/>
+        <mkdir dir="${core.ext.dir}/app"/>
+
+        <record name="${build.log.file}" action="start"/>
+
+        <pathconvert property="local.build.platform.dir">
+            <path>
+                <pathelement path="${build.platform.dir}"/>
+            </path>
+            <map from="${basedir}" to="."/>
+        </pathconvert>
+        <echo file="${src.dir}/etc/lg3d/build-platform" message="BUILDPLATFORM='${local.build.platform.dir}'"/>
+
+	<antcall target="unpack-j3d"/>
+    </target>
+
+    <target name="compile-javaonly" description="Compile only Java code">
+        <antcall target="compile">
+            <param name="nonative" value="true"/>
+            <param name="nox11" value="true"/>
+        </antcall>
+    </target>
+
+    <target name="jar-javaonly" description="Build and jar only Java code">
+        <antcall target="jar">
+            <param name="nonative" value="true"/>
+            <param name="nox11" value="true"/>
+        </antcall>
+    </target>
+
+    <target name="compile" depends="init" description="Compile SDK (exclude X11 integration">
+
+        <copy file="${build-tools.dir}/LgBuildInfo.java" todir="${javasrc.dir}/org/jdesktop/lg3d/displayserver">
+            <filterset>
+                <filter token="BUILD_TIME_STAMP" value="${build.stamp}"/>
+                <filter token="BUILD_DATE" value="${build.date}"/>
+                <filter token="BUILD_TYPE" value="${build.type}"/>
+                <filter token="BUILD_VERSION" value="${build.version}"/>
+                <filter token="IS_DEBUG" value="${build.debug}"/>
+                <filter token="JAVA_VERSION" value="${java.version}"/>
+            </filterset>
+        </copy>
+
+        <!-- Both srcdir and destdir should be package roots. -->
+        <javac debug="${build.debug}"
+               deprecation="${build.showdeprecation}"
+               destdir="${build.classes.dir}"
+               nowarn="true"
+               source="1.5"
+               sourcepath=""
+               target="1.5">
+            <!-- To add something to the classpath: -->
+            <classpath>
+		<pathelement path="${j3d.classpath}"/>
+                <pathelement location="${core.ext.dir}/escher-0.2.2.lg.jar"/>
+                <pathelement location="${core.ext.dir}/satin-v2.3.jar"/>
+		<pathelement location="${core.ext.dir}/j3d-contrib-utils.jar"/>
+                <pathelement location="${incubator.dir}/build/classes"/>
+                <pathelement location="${demoapps.dir}/build/classes"/>
+                <pathelement location="${sgs.lib.dir}/sgs-client.jar"/>
+            </classpath>
+            <src path="${javasrc.dir}"/>
+            <src path="${javasrc.vmspecific.dir}"/>
+            <include name="org/**"/>
+            <exclude name="${awt.toolkit.excludes}"/>
+            <patternset>
+                <exclude name="org/jdesktop/lg3d/awt/mlg3dtoolkit.java" unless="awt.toolkit.mac"/>
+                <exclude name="org/jdesktop/lg3d/awt/wlg3dtoolkit.java" unless="awt.toolkit.windows"/>
+                <exclude name="org/jdesktop/lg3d/awt/xlg3dtoolkit.java" unless="awt.toolkit.x"/>
+            </patternset>
+            <exclude name="org/jdesktop/lg3d/displayserver/fws/x11/**"/>
+            <exclude name="org/jdesktop/lg3d/apps/x11integration/**"/>
+
+            <!-- Exclude the rmi scene graph files until we start using them -->
+            <exclude name="org/jdesktop/lg3d/sg/internal/rmi/**"/>
+            <exclude name="org/jdesktop/lg3d/wg/internal/rmi/**"/>
+
+            <!-- Exclude the Ode physics files, a Java spring damper system is now in lg3d -->
+            <exclude name="org/jdesktop/lg3d/wg/internal/j3d/j3dnodes/Ode*.java"/>
+        </javac>
+        
+        <antcall target="compile-x11"/>
+        <antcall target="junit-tests"/>
+    </target>
+
+    <target name="release" depends="fail-if-x11-not-exist"
+        description="Build the release directory">
+        <antcall target="release-nox11check"/>
+    </target>
+
+    <target name="release-nox11check" depends="jar">
+        <delete dir="${release.dir.lg3d}"/>
+        <mkdir dir="${release.dir.lg3d}/lib"/>
+        <mkdir dir="${release.dir.lg3d}/bin"/>
+        <mkdir dir="${release.dir.lg3d}/etc"/>
+        <mkdir dir="${release.dir.lg3d}/resources"/>
+        <mkdir dir="${release.dir.lg3d}/ext-unbundled"/>
+        <mkdir dir="${release.dir.lg3d}/ext"/>
+        <mkdir dir="${release.javadoc.dir}"/>
+
+        <copy todir="${release.dir.lg3d}/etc">
+            <fileset dir="${src.dir}/etc">
+              <exclude name="lg3d/classpath/*-dev.cfg"/>
+            </fileset>
+        </copy>
+        <copy todir="${release.dir.lg3d}/resources">
+            <fileset dir="${src.dir}/resources"/>
+        </copy>
+        <copy todir="${release.dir.lg3d}/lib">
+            <fileset dir="${build.lib.dir}/">
+              <exclude name="lg3d-backgrounds.jar"/>
+              <exclude name="lg3d-demo-apps.jar"/>
+              <exclude name="lg3d-incubator.jar"/>
+            </fileset>
+        </copy>
+
+        <copy todir="${release.dir.lg3d}/bin">
+            <fileset dir="${scripts.dir}/" excludes="*.csh"/>
+            <filterset begintoken = "#_" endtoken = "_#">
+              <filter token=" export DEVELOPMENT='true' " value="export RELEASE='true'"/>
+            </filterset>
+        </copy>
+
+        <chmod dir="${release.dir.lg3d}/bin" perm="a+rx" includes="*"/>
+        <copy todir="${release.dir.lg3d}/ext-unbundled">
+            <fileset file="${extun.dir}/README"/>
+        </copy>
+        
+        <!-- Don't tar up the lg3d-x11 directory if nox11 is set -->
+        <condition property="excludex11" value="lg3d-x11/**">
+           <isset property="nox11"/>
+        </condition>
+        <copy todir="${release.dir.lg3d}/ext">
+           <fileset dir="${core.ext.dir}/">
+               <include name="**"/>
+               <exclude name="*.gz"/>
+               <exclude name="ode*"/>
+               <exclude name="${excludex11}"/>
+               <exclude name="nwn*"/>
+           </fileset>
+           <fileset dir="${incubator.ext.dir}">
+               <include name="**"/>
+           </fileset>
+        </copy>
+
+        <copy tofile="${release.dir.lg3d}/LICENSE.txt">
+            <fileset file="www/BinaryCodeLicense.txt"/>
+        </copy>
+
+        <antcall target="copy-x-related-native-libs"/>
+
+        <ant inheritAll="false" dir="${incubator.dir}" target="release-incubator">
+            <property name="release.dir.lg3d" value="${release.dir.lg3d}"/>
+        </ant>
+        
+        <antcall target="release-demoapps">
+            <param name="release.dir.lg3d" value="${release.dir.lg3d}"/>
+        </antcall>
+        
+        <property name="release.file" value="lg3d-${build.type}-${build.version}-${build.platform}-${build.stamp}"/>
+
+        <antcall target="sign-jars"/>
+        <antcall target="javadoc"/>
+        <antcall target="tar-release"/>
+    </target>
+
+    <target name="sign-jars" if="signJars" description="Sign the jar files for webstart release">
+        <jar compress="false" jarfile="${release.dir.lg3d}/lib/lg3d-core.jar" update="true">
+            <fileset dir="${src.dir}"
+            includes="etc/lg3d/*.lgcfg"/>
+        </jar>
+
+        <exec executable="../../signJar.sh">
+            <arg value="${release.dir.lg3d}/lib/lg3d-core.jar"/>
+        </exec>
+        <exec executable="../../signJar.sh">
+            <arg value="${release.dir.lg3d}/lib/lg3d-incubator.jar"/>
+        </exec>
+        <exec executable="../../signJar.sh">
+            <arg value="${release.dir.lg3d}/lib/lg3d-background.jar"/>
+        </exec>
+        <exec executable="../../signJar.sh">
+            <arg value="${release.dir.lg3d}/ext/j3d-contrib-utils.jar"/>
+        </exec>
+        <exec executable="../../signJar.sh">
+            <arg value="${release.dir.lg3d}/ext/satin-v2.3.jar"/>
+        </exec>
+    </target>
+
+    <target name="webstart" description="build a webstart release">
+        <property name="jar.compress" value="true"/>
+        <property name="signJars" value="true"/>
+        <property name="nojavadoc" value="true"/>
+        <property name="nox11" value="true"/>
+        <property name="build.type" value="webstart"/>
+        <antcall target="release-nox11check"/>
+    </target>
+
+    <target name="tar-release" unless="notar">
+        <antcall target="tar-release-x11"/>
+        <!--<antcall target="tar-release-win32"/>-->
+        <antcall target="zip-release-win32"/>
+        <antcall target="tar-javadoc"/>
+    </target>
+
+    <target name="tar-release-x11" unless="nox11" depends="init-x11">
+        <tar destfile="${release.dir}/${release.file}.tar.gz"
+            compression="gzip"
+            longfile="gnu">
+            <tarfileset dir="${release.dir.lg3d}/.." mode="755">
+                <include name="lg3d/bin/*"/>
+                <include name="lg3d/lib/${ostype}-${arch}/lg3d-x11/programs/Xserver/Xorg"/>
+                <include name="lg3d/lib/${ostype}-${arch}/lg3d-x11/programs/Xserver/Xvfb"/>
+            </tarfileset>
+            <tarfileset dir="${release.dir.lg3d}/..">
+                <include name="lg3d/**"/>
+                <exclude name="lg3d/bin/*"/>
+                <exclude name="lg3d/docs/javadoc/**"/>
+                <exclude name="lg3d/lib/${ostype}-${arch}/lg3d-x11/programs/Xserver/Xorg"/>
+                <exclude name="lg3d/lib/${ostype}-${arch}/lg3d-x11/programs/Xserver/Xvfb"/>
+            </tarfileset>
+        </tar>
+    </target>
+    
+    <target name="tar-javadoc" unless="nojavadoc" description="tar the javadocs">
+        <tar destfile="${release.dir}/javadoc-${release.file}.tar.gz"
+            compression="gzip"
+            longfile="gnu">
+            <tarfileset dir="${release.dir.lg3d}/..">
+                <include name="lg3d/docs/javadoc/**"/>
+            </tarfileset>
+        </tar>        
+    </target>
+
+    <target name="zip-release-win32" unless="notar" if="nox11">
+        <zip destfile="${release.dir}/${release.file}.zip">
+            <zipfileset dir="${release.dir.lg3d}/.." filemode="755">
+                <include name="lg3d/bin/*"/>
+            </zipfileset>
+            <zipfileset dir="${release.dir.lg3d}/..">
+                <include name="lg3d/**"/>
+                <exclude name="lg3d/bin/*"/>
+                <exclude name="lg3d/docs/javadoc/**"/>
+                <exclude name="lg3d/ext/lg3d-x11/**"/>
+            </zipfileset>
+        </zip>
+    </target>
+
+    <!-- win32 installer build : begin -->
+    <!-- to execute this you have to have makensis in PATH variable
+    due to paths for NSIS works correctly on windows machine only -->
+    <target name="installer-win32" depends="init"
+        description="Build Windows installer from release directory">
+
+        <property name="nox11" value="true"/>
+        <property name="nonative" value="true"/>
+        <property name="x11.exists" value="ignore"/>
+        <antcall target="release-nox11check"/>
+
+        <!-- support scripts for win32 -->
+        <property name="win32.dir" location="${build-tools.dir}/win32"/>
+        <!-- prepare startup scripts location -->
+        <property name="scripts.dir" location="${win32.dir}/scripts"/>
+        <!-- license filename -->
+        <property name="license.file" location="${release.dir.lg3d}/ClickThruLicense.txt"/>
+        <!-- prepare release file name -->
+        <property name="release.file"
+        value="lg3d-${build.type}-${build.version}-${build.platform}-${build.stamp}"/>
+
+        <!-- prepare NSIS script -->
+        <copy file="${win32.dir}/lg3d.nsi.template"
+        tofile="${win32.dir}/lg3d.nsi" overwrite="true"/>
+
+        <!-- create license file -->
+        <concat destfile="${license.file}" fixlastline="true">
+            <filelist dir="./build-tools" files="License-Preamble.txt"/>
+            <filelist dir="${win32.jre.dir}" files="LICENSE"/>
+            <filelist dir="./build-tools" files="Java3D-ClickThruLicense.txt"/>
+            <filelist dir="${release.dir.lg3d}" files="LICENSE.txt"/>
+        </concat>
+
+        <!-- fill in variables of script -->
+        <replace file="${win32.dir}/lg3d.nsi" token="@RUNTIME_DIR@"
+        value="${win32.jre.dir}"/>
+        <replace file="${win32.dir}/lg3d.nsi" token="@RELEASE_DIR@"
+        value="${release.dir.lg3d}"/>
+
+        <replace file="${win32.dir}/lg3d.nsi" token="@LG3D_SCRIPTS@"
+        value="${scripts.dir}"/>
+        <replace file="${win32.dir}/lg3d.nsi" token="@LG3D_RELEASE@"
+        value="${release.dir}"/>
+        <replace file="${win32.dir}/lg3d.nsi" token="@LG3D_INSTALL@"
+        value="${release.file}"/>
+        <replace file="${win32.dir}/lg3d.nsi" token="@LG3D_VERSION@"
+        value="${build.version}"/>
+        <replace file="${win32.dir}/lg3d.nsi" token="@LG3D_LICENSE@"
+        value="${license.file}"/>
+
+        <!-- create installer -->
+        <exec executable="makensis" failonerror="true">
+            <arg file="${win32.dir}/lg3d.nsi" />
+        </exec>
+
+        <!-- clean temporary file -->
+        <delete file="${win32.dir}/lg3d.nsi"/>
+    </target>
+    <!-- win32 installer build : end -->
+
+
+    <!-- rpm build : begin -->
+    <target name="rpm" depends="release"
+        description="Build rpm from release directory">
+        <mkdir dir="${rpm.dir}/tmp"/>
+        <mkdir dir="${rpm.dir}/BUILD"/>
+        <mkdir dir="${rpm.dir}/RPMS"/>
+        <!-- delete spec file, tar.gz files -->
+        <delete file="${rpm.dir}/SPECS/lg3d.spec"/>
+        <delete file="${rpm.dir}/SOURCES/lg3d*.tar.gz"/>
+        <delete file="${rpm.dir}/SOURCES/javadoc-lg3d*.tar.gz"/>
+        <!-- copy original tar file to SOURCES directory -->
+        <copy todir="${rpm.dir}/SOURCES/">
+            <fileset file="${release.dir}/${release.file}.tar.gz"/>
+            <fileset file="${release.dir}/javadoc-${release.file}.tar.gz"/>
+        </copy>
+        <!-- copy additional packages -->
+        <!-- mkdir dir="${rpm.dir}/SOURCES/additional"/ -->
+        <!-- copydir src="./release/lg3d" dest="${rpm.dir}/SOURCES/additional" / -->
+        <!-- make spec file -->
+        <echo file="${rpm.dir}/SPECS/lg3d.spec">
+      %define lg3d_version ${rpmbuild.version}
+      %define lg3d_tar_filename ${release.file}.tar.gz
+      %define lg3d_build_time ${build.stamp}
+      %define _topdir ${rpm.dir}
+      %define _tmppath ${rpm.dir}/tmp
+      %define build_arch ${ostype}/${arch}
+      %define _target_cpu ${arch}
+        </echo>
+        <exec executable="cat" output="${rpm.dir}/SPECS/lg3d.spec" append="yes">
+            <arg file="${rpm.dir}/SPECS/lg3d.spec.template" />
+        </exec>
+
+        <rpm specFile="lg3d.spec" topDir="${rpm.dir}" cleanBuildDir="true" />
+
+        <!--
+        <exec executable="rpmbuild">
+        <arg value="-bb" />
+        <arg file="${rpm.dir}/SPECS/lg3d.spec" />
+        </exec>
+        -->
+
+        <delete file="${rpm.dir}/SOURCES/${release.file}.tar.gz" />
+        <delete file="${rpm.dir}/SOURCES/javadoc-${release.file}.tar.gz" />
+        <delete dir="${rpm.dir}/tmp"/>
+        <delete dir="${rpm.dir}/BUILD"/>
+        <!-- delete dir="${rpm.dir}/SOURCES/additional"/ -->
+    </target>
+    <!-- rpm build : end -->
+
+
+    <!-- Solaris pkg : begin -->
+    <!-- WARNING :
+         This is a prototype part of create pkg for Solaris.
+         Now, file copy part is not implemented.
+         All files of lg3d will be installed in /opt/lg3d .
+    -->
+    <target name="solpkg" depends="init"
+        description="Build pkg file(s) for Solaris x86">
+        <!-- delete solpkg directory -->
+        <delete dir="${release.dir}/solpkg" failonerror="false"/>
+
+        <!-- make directories -->
+        <mkdir dir="${release.dir}/solpkg"/>
+
+        <antcall target="create_pkg_hierarchy">
+            <param name="pkg.dir" value="solpkg"/>
+        </antcall>
+
+        <antcall target="create_jdk_hierarchy">
+            <param name="pkg.dir" value="solpkg"/>
+        </antcall>
+
+        <!-- create license file -->
+        <concat destfile="${release.dir}/solpkg/LICENSE.txt" fixlastline="true">
+            <filelist dir="./build-tools" files="License-Preamble.txt"/>
+            <filelist dir="${jdk.dir}" files="LICENSE"/>
+            <filelist dir="./build-tools" files="Java3D-ClickThruLicense.txt"/>
+            <filelist dir="${release.dir.lg3d}" files="LICENSE.txt"/>
+        </concat>
+        
+<!--        <concat destfile="${release.dir}/solpkg/checkinstall">
+            <filelist dir="${build-tools.dir}/solpkg/" files="script-header.txt"/>
+            <filelist dir="." files="LICENSE.txt"/>
+            <filelist dir="${build-tools.dir}/solpkg" files="script-footer.txt"/>
+        </concat>-->
+        
+        <!-- build solaris package -->
+        <!-- BASEDIR have to change : /opt is for test -->
+        <echo file="${release.dir}/solpkg/pkginfo">PKG=LG3D
+NAME=Project Looking Glass
+VERSION=${rpmbuild.version}
+ARCH=${arch}
+DESC=Project Looking Glass ${rpmbuild.version}
+BASEDIR=/
+CLASSES=none
+CATEGORY=application
+VENDOR=lg3d-core team</echo>
+
+<!-- Ant 1.6 feature -->
+<!--        <concat destfile="${release.dir}/solpkg/pkginfo" trimleading="true">
+            PKG=LG3D
+            NAME=Project Looking Glass
+            VERSION=${rpmbuild.version}
+            ARCH=${arch}
+            DESC=Project Looking Glass ${rpmbuild.version}
+            BASEDIR=/
+            CLASSES=none
+            CATEGORY=application
+            VENDOR=lg3d-core team
+        </concat>-->
+
+        <!-- WARNING : NEED TO MODIFY : END -->
+
+        <exec dir="${release.dir}/solpkg" executable="${build-tools.dir}/solpkg/mkproto.sh" />
+        <exec dir="${release.dir}/solpkg" executable="pkgmk">
+            <arg value="-r"/>
+            <arg value="."/>
+            <arg value="-d"/>
+            <arg value="."/>
+        </exec>
+        <exec dir="${release.dir}/solpkg" executable="pkgtrans">
+            <arg value="-s"/>
+            <arg value="."/>
+            <arg value="${release.dir}/solpkg/lg3d-${build.type}-${build.version}-${build.platform}-${build.stamp}-pkg"/>
+            <arg value="LG3D"/>
+        </exec>
+<!--        <exec dir="${release.dir}" executable="gzip">
+            <arg value="${release.dir}/lg3d-${build.type}-${build.version}-${build.platform}-${build.stamp}-pkg"/>
+        </exec>-->
+        <!-- Create the .bin -->
+        
+        <property name="release.file" value="lg3d-${build.type}-${build.version}-${build.platform}-${build.stamp}-pkg"/>
+        
+         <copy todir="${release.dir}/solpkg" overwrite="true">
+             <fileset file="${build-tools.dir}/solpkg/*.txt"/>
+             <filterset>
+                <filter token="PKG_FILE" value="${release.file}"/>
+             </filterset>
+         </copy>
+         <copy todir="${release.dir}/solpkg" overwrite="true">
+             <fileset file="${build-tools.dir}/mega/${ostype}-${arch}/unzipsfx"/>
+             <fileset file="${build-tools.dir}/mega/genzip"/>
+         </copy>
+         
+         <chmod perm="a+rx" file="${release.dir}/solpkg/genzip"/>
+         
+         <exec dir="${release.dir}/solpkg" executable="/bin/bash">
+               <arg line="./genzip ../${release.file} LICENSE.txt lg3d-${build.type}-${build.version}-${build.platform}-${build.stamp}-pkg"/>
+         </exec>
+
+        <!-- delete solpkg directory -->
+        <delete dir="${release.dir}/solpkg"/>
+    </target>
+    <!-- Solaris pkg : end -->
+
+    <target name="create_pkg_hierarchy" description="Copy all necessary files into a directory hierarchy for packaging">
+        <mkdir dir="${release.dir}/${pkg.dir}/usr/share/lg3d"/>
+        <mkdir dir="${release.dir}/${pkg.dir}/etc/lg3d"/>
+        <copy todir="${release.dir}/${pkg.dir}/etc/lg3d">
+            <fileset file="${release.dir.lg3d}/etc/lg3d/**"/>
+        </copy>
+        <copy todir="${release.dir}/${pkg.dir}/usr/share/lg3d">
+            <fileset dir="${release.dir.lg3d}">
+                <!--<exclude name="lib/*.so"/>-->
+                <exclude name="etc/"/>
+                <!--<exclude name="bin/postinstall"/> -->
+                <exclude name="bin/lg3d-webstart-test"/>
+                <exclude name="bin/lgcapture"/>
+                <exclude name="bin/HelloUniverse"/>
+                <exclude name="bin/*.bat"/>
+                <include name="**"/>
+            </fileset>
+            <fileset file="./www/BinaryCodeLicense.txt"/>
+            <fileset file="./www/Copyright.txt"/>
+        </copy>
+		<unzip src="${j3d.rel}" dest="${release.dir}/${pkg.dir}/usr/share/lg3d/ext/">
+			<patternset>
+				<include name="**/*.jar"/>
+				<exclude name="**/*.so"/>
+			</patternset>
+			<mapper type="flatten"/>
+		</unzip>
+		<unzip src="${j3d.rel}"
+		dest="${release.dir}/${pkg.dir}/usr/share/lg3d/lib/${ostype}-${arch}/">
+			<patternset>
+				<include name="**/*.so"/>
+				<exclude name="**/*.jar"/>
+			</patternset>
+			<mapper type="flatten"/>
+		</unzip>
+
+        <chmod dir="${release.dir}/${pkg.dir}/usr/share/lg3d/bin" perm="a+rx" includes="*"/>
+        <chmod dir="${release.dir}/${pkg.dir}/usr/share/lg3d/lib/${ostype}-${arch}/lg3d-x11/programs/Xserver" perm="a+rx" includes="*"/>
+
+    </target>
+    
+    <target name="create_jdk_hierarchy" description="Copy the jdk and java3d into a directory hierarchy for packaging">
+        <!-- Set up the JDK -->
+        <copy todir="${release.dir}/${pkg.dir}/usr/share/lg3d-jdk">
+            <fileset file="${jdk.dir}/**"/>
+        </copy>
+        <chmod file="${release.dir}/${pkg.dir}/usr/share/lg3d-jdk/bin/*"
+        perm="a+rx"/>
+        <chmod file="${release.dir}/${pkg.dir}/usr/share/lg3d-jdk/jre/bin/*"
+        perm="a+rx"/>
+        
+        <!-- Set up Java 3D -->
+        <unzip src="${j3d.rel}"
+        dest="${release.dir}/${pkg.dir}/usr/share/lg3d-jdk/jre"/>
+                
+    </target>
+    
+    <target name="megabundle" description="Tar bundle with everything required to run lg3d" depends="init">
+        <antcall target="release">
+<!--            <param name="notar" value="true"/>
+            <param name="nojavadoc" value="true"/>-->
+        </antcall>
+                
+        <!-- Copy setup again adding MEGA property -->
+        <copy todir="${release.dir.lg3d}/bin" overwrite="true">
+            <fileset file="${scripts.dir}/setup"/>
+            <filterset begintoken = "#_" endtoken = "_#">
+              <filter token=" export DEVELOPMENT='true' " value="export RELEASE='true'"/>
+              <filter token=" export MEGA='true' " value="export MEGA='true'"/>
+            </filterset>
+        </copy>
+
+        <antcall target="create_pkg_hierarchy">
+            <param name="pkg.dir" value="mega/lg3d"/>
+        </antcall>
+        
+        <antcall target="create_jdk_hierarchy">
+            <param name="pkg.dir" value="mega/lg3d"/>
+        </antcall>
+               
+        <!-- Create the bin mega bin directory -->
+        <mkdir dir="${release.dir}/mega/lg3d/bin"/>
+        <copy todir="${release.dir}/mega/lg3d/bin">
+            <fileset file="${build-tools.dir}/mega/bin/*"/>
+        </copy>
+        <chmod file="${release.dir}/mega/lg3d/bin/*"
+        perm="a+rx"/>
+        
+        <!-- create license file -->
+        <concat destfile="${release.dir}/mega/LICENSE.txt" fixlastline="true">
+            <filelist dir="./build-tools" files="License-Preamble.txt"/>
+            <filelist dir="${jdk.dir}" files="LICENSE"/>
+            <filelist dir="./build-tools" files="Java3D-ClickThruLicense.txt"/>
+            <filelist dir="${release.dir.lg3d}" files="LICENSE.txt"/>
+        </concat>
+
+        <!-- Create the .bin -->
+         <copy todir="${release.dir}/mega" overwrite="true">
+             <fileset file="${build-tools.dir}/mega/${ostype}-${arch}/*"/>
+             <fileset file="${build-tools.dir}/mega/genzip"/>
+         </copy>
+         <chmod perm="a+rx" file="${release.dir}/mega/genzip"/>
+         
+        <property name="release.file" value="lg3d-${build.type}-${build.version}-${build.platform}-${build.stamp}"/>
+         <exec dir="${release.dir}/mega" executable="/bin/bash">
+            <arg line="./genzip ../${release.file} LICENSE.txt lg3d"/>             
+         </exec>
+
+        <!-- delete mega directory -->
+        <delete dir="${release.dir}/mega"/>
+             
+    </target>
+
+    <target name="dpkg" description="Create debian package" depends="release">
+        <mkdir dir="${release.dir}/dpkg"/>
+        <mkdir dir="${release.dir}/dpkg/DEBIAN"/>
+        <copy file="${build-tools.dir}/dpkg/control"
+            tofile="${release.dir}/dpkg/DEBIAN/control"
+            overwrite="true">
+            <filterset>
+                <filter token="VERSION" value="${rpmbuild.version}"/>
+                <filter token="VERSION_RPM" value="${rpmbuild.version}"/>
+                <!--                <filter token="OS_ARCH" value="${arch}"/>-->
+                <filter token="OS_ARCH" value="i386"/>
+            </filterset>
+        </copy>
+        <chmod dir="${release.dir}/dpkg" perm="755"/>
+        <copy file="${build-tools.dir}/dpkg/postinst"
+        todir="${release.dir}/dpkg/DEBIAN"/>
+        <chmod file="${release.dir}/dpkg/DEBIAN/postinst"
+        perm="a+rx"/>
+        
+        <copy file="${build-tools.dir}/dpkg/preinst"
+        todir="${release.dir}/dpkg/DEBIAN"/>
+        <chmod file="${release.dir}/dpkg/DEBIAN/preinst"
+        perm="a+rx"/>
+
+        <copy file="${build-tools.dir}/dpkg/prerm"
+        todir="${release.dir}/dpkg/DEBIAN"/>
+        <chmod file="${release.dir}/dpkg/DEBIAN/prerm"
+        perm="a+rx"/>
+
+        <copy file="${build-tools.dir}/dpkg/postrm"
+        todir="${release.dir}/dpkg/DEBIAN"/>
+        <chmod file="${release.dir}/dpkg/DEBIAN/postrm"
+        perm="a+rx"/>
+
+        <copy file="${build-tools.dir}/dpkg/config"
+        todir="${release.dir}/dpkg/DEBIAN"/>
+        <chmod file="${release.dir}/dpkg/DEBIAN/config"
+        perm="a+rx"/>
+        <copy file="${build-tools.dir}/dpkg/templates"
+        todir="${release.dir}/dpkg/DEBIAN"/>
+        <chmod file="${release.dir}/dpkg/DEBIAN/templates"
+        perm="a+rx"/>
+        
+        <!-- Copy setup again adding UBUNTU property -->
+        <copy todir="${release.dir.lg3d}/bin" overwrite="true">
+            <fileset file="${scripts.dir}/setup"/>
+            <filterset begintoken = "#_" endtoken = "_#">
+              <filter token=" export DEVELOPMENT='true' " value="export RELEASE='true'"/>
+              <filter token=" export UBUNTU='true' " value="export UBUNTU='true'"/>
+            </filterset>
+        </copy>
+
+        <antcall target="create_pkg_hierarchy">
+            <param name="pkg.dir" value="dpkg"/>
+        </antcall>
+
+        <exec dir="${release.dir}" executable="dpkg">
+            <arg value="-b"/>
+            <arg value="${release.dir}/dpkg"/>
+            <arg value="lg3d-core_${rpmbuild.version}_${arch}.deb"/>
+        </exec>
+
+    </target>
+<!--
+    <target name="dpkg-jdk" depends="init">
+        <copy todir="${build-tools.dir}/dpkg-ext/jdk/install/usr/share/lg3d-jdk">
+            <fileset file="${jdk.dir}/**"/>
+        </copy>
+        <chmod file="${build-tools.dir}/dpkg-ext/jdk/install/usr/share/lg3d-jdk/bin/*"
+        perm="a+rx"/>
+        <chmod file="${build-tools.dir}/dpkg-ext/jdk/install/usr/share/lg3d-jdk/jre/bin/*"
+        perm="a+rx"/>
+
+        <copy file="${build-tools.dir}/dpkg-ext/jdk/dpkg/control"
+            tofile="${build-tools.dir}/dpkg-ext/jdk/install/DEBIAN/control"
+            overwrite="true">
+            <filterset>
+                <filter token="VERSION" value="${rpmbuild.version}"/>
+                <filter token="VERSION_RPM" value="${rpmbuild.version}"/>
+                <#!#-#-                <filter token="OS_ARCH" value="${arch}"/> #-#-#>
+                <filter token="OS_ARCH" value="i386"/>
+            </filterset>
+        </copy>
+
+        <copy file="${build-tools.dir}/dpkg-ext/jdk/dpkg/preinst"
+            tofile="${build-tools.dir}/dpkg-ext/jdk/install/DEBIAN/preinst"
+            overwrite="true"/>
+        <chmod file="${build-tools.dir}/dpkg-ext/jdk/install/DEBIAN/preinst"
+        perm="a+rx"/>
+
+        <exec dir="${build-tools.dir}/dpkg-ext/jdk" executable="dpkg">
+            <arg value="-b"/>
+            <arg value="install"/>
+            <arg value="lg3d_${jdkdir}_${arch}.deb"/>
+        </exec>
+        <move file="${build-tools.dir}/dpkg-ext/jdk/lg3d_${jdkdir}_${arch}.deb" todir="${release.dir}" overwrite="true"/>
+    </target>
+    <target name="dpkg-java3d" depends="init">
+        <unzip src="${j3d.rel}"
+        dest="${build-tools.dir}/dpkg-ext/java3d/install/usr/lib/jvm/sun-lg3d-jdk/jre"/>
+
+        <copy file="${build-tools.dir}/dpkg-ext/java3d/dpkg/control"
+            tofile="${build-tools.dir}/dpkg-ext/java3d/install/DEBIAN/control"
+            overwrite="true">
+            <filterset>
+                <filter token="VERSION" value="${rpmbuild.version}"/>
+                <filter token="VERSION_RPM" value="${rpmbuild.version}"/>
+                <#!#-#-                <filter token="OS_ARCH" value="${arch}"/>#-#-#>
+                <filter token="OS_ARCH" value="i386"/>
+            </filterset>
+        </copy>
+
+        <copy file="${build-tools.dir}/dpkg-ext/java3d/dpkg/preinst"
+            tofile="${build-tools.dir}/dpkg-ext/java3d/install/DEBIAN/preinst"
+            overwrite="true"/>
+        <chmod file="${build-tools.dir}/dpkg-ext/java3d/install/DEBIAN/preinst"
+        perm="a+rx"/>
+
+        <exec dir="${build-tools.dir}/dpkg-ext/java3d" executable="dpkg">
+            <arg value="-b"/>
+            <arg value="install"/>
+            <arg value="lg3d_java3d_1.5.0_${arch}.deb"/>
+        </exec>
+        <move file="${build-tools.dir}/dpkg-ext/java3d/lg3d_java3d_1.5.0_${arch}.deb" todir="${release.dir}" overwrite="true"/>
+    </target> 
+-->
+    <target name="jar" depends="init,compile">
+        <mkdir dir="${build.lib.dir}"/>
+        <jar compress="${jar.compress}" jarfile="${build.lib.dir}/lg3d-core.jar">
+            <manifest>
+                <attribute name="Main-Class" value="org.jdesktop.lg3d.displayserver.Main"/>
+                <attribute name="Class-Path" value="lg3d-demo-apps.jar lg3d-incubator.jar lg3d-backgrounds.jar ../../ext/j3d-contrib-utils.jar ../../ext/satin-v2.3.jar ../../ext/escher-0.2.2.lg.jar"/>
+            </manifest>
+            <fileset dir="${build.classes.dir}/"
+                includes="org/**"
+                excludes="org/jdesktop/lg3d/wg/internal/swingnode/SwingNodeJFrame*"/>
+            <fileset dir="${src.dir}"
+            includes="resources/images/**,
+            resources/core-gestures.gsa,
+            resources/models/pingiun/**,
+            etc/lg3d/**"/>
+           <fileset dir="${src.dir}/classes"
+            includes="org/jdesktop/lg3d/appkit/resource/**"/>
+        </jar>
+
+	<if>
+	    <istrue value="${build.x11}"/>
+	    <then>
+		<jar compress="${jar.compress}" jarfile="${build.lib.dir}/fws-x11-kbd-utils.jar">
+		    <fileset dir="${build.classes.dir}/"
+		    includes="sun/awt/X11/**"/>
+		</jar>
+	    </then>
+	</if>
+
+	<if>
+	    <istrue value="${build.awt.toolkit}"/>
+	    <then>
+		<jar compress="${jar.compress}" jarfile="${build.lib.dir}/lg3d-awt-toolkit.jar">
+		    <fileset dir="${build.classes.dir}/"
+		    includes="org/jdesktop/lg3d/awt/** org/jdesktop/lg3d/toolkit/* org/jdesktop/lg3d/wg/internal/swingnode/SwingNodeJFrame*"/>
+		</jar>
+	    </then>
+	</if>
+
+        <antcall target="jar-awt"/>
+        <antcall target="jar-demoapps"/>
+        <antcall target="jar-incubator"/>
+        <!-- <antcall target="jar-wonderland"/> -->
+    </target>
+
+    <target name="all" depends="init,jar" description="Build everything.">
+    </target>
+
+    <target name="javadoc" depends="init" description="Javadoc for LG3D API" unless="nojavadoc">
+        <mkdir dir="${release.javadoc.dir}"/>
+        <echo message="link: ${javadoc.packagelist.dir}/escher"/>
+        <javadoc destdir="${release.javadoc.dir}/api"
+            sourcepath="${javasrc.dir}"
+            packagenames="org.jdesktop.lg3d.*"
+            excludepackagenames="org.jdesktop.lg3d.displayserver.*,
+            org.jdesktop.lg3d.scenemanager.*,
+            org.jdesktop.lg3d.apps.*,
+            org.jdesktop.lg3d.sg.internal.*,
+            org.jdesktop.lg3d.wg.internal.*">
+            <classpath>
+                <pathelement location="${core.ext.dir}/escher-0.2.2.lg.jar"/>
+                <pathelement location="${core.ext.dir}/satin-v2.3.jar"/>
+                <pathelement location="${incubator.dir}/build/classes"/>
+            </classpath>
+            <doctitle><![CDATA[<h1>Project Looking Glass (LG3D) API (pre-Alpha)</h1>]]></doctitle>
+            <bottom><![CDATA[<i>Project Looking Glass (LG3D) API (pre-Alpha) - http://lg3d.dev.java.net</i>]]></bottom>
+            <link offline="true" href="http://gameldar.fdns.net/lg3d-escher/api" packageListLoc="${javadoc.packagelist.dir}/escher"/>
+            <link offline="true" href="http://javadesktop.org/java3d/javadoc/1.3.2-beta2/" packageListLoc="${javadoc.packagelist.dir}/j3dapi"/>
+            <link offline="true" href="http://java.sun.com/j2se/1.5.0/docs/api" packageListLoc="${javadoc.packagelist.dir}/1.5.0"/>
+            <link offline="true" href="http://guir.berkeley.edu/projects/javadoc" packageListLoc="${javadoc.packagelist.dir}/satin"/>
+        </javadoc>
+        <javadoc destdir="${release.javadoc.dir}/scenemanager-api"
+            sourcepath="${javasrc.dir}"
+            packagenames="org.jdesktop.lg3d.scenemanager.*">
+            <doctitle><![CDATA[<h1>LG3D SceneManager API (pre-Alpha)</h1>]]></doctitle>
+            <bottom><![CDATA[<i>Java 3D Utilities (pre-Alpha)</i>]]></bottom>
+            <link offline="true" href="http://java.sun.com/products/java-media/3D/forDevelopers/J3D_1_3_API/j3dapi" packageListLoc="${javadoc.packagelist.dir}/j3dapi"/>
+            <link offline="true" href="http://java.sun.com/j2se/1.5.0/docs/api" packageListLoc="${javadoc.packagelist.dir}/1.5.0"/>
+        </javadoc>
+    </target>
+
+    <target name="clean" description="Clean all build products.">
+        <delete dir="${build.platform.dir}"/>
+        <delete dir="${release.javadoc.dir}"/>
+        <delete dir="${x11.dest.dir}"/>
+        <delete dir="${release.dir}"/>
+        <delete file="src/classes/org/jdesktop/lg3d/displayserver/LgBuildInfo.java"/>
+        <delete dir="release"/>
+        <delete dir="build"/>
+        <delete>
+            <fileset dir="src/native/org/jdesktop/lg3d/displayserver/fws/x11/" includes="org_*.h"/>
+            <fileset dir="src/native/org/jdesktop/lg3d/displayserver/fws/x11/" includes="*.o"/>
+            <fileset dir="src/native/org/jdesktop/lg3d/displayserver/fws/x11/" includes="*.so"/>
+            <fileset dir="src/native/org/jdesktop/lg3d/displayserver/fws/x11/dso/" includes="org_*.h"/>
+            <fileset dir="src/native/org/jdesktop/lg3d/displayserver/fws/x11/dso/" includes="*.o"/>
+            <fileset dir="src/native/org/jdesktop/lg3d/displayserver/fws/x11/dso/" includes="*.so"/>
+        </delete>
+        <delete>
+            <fileset dir="${core.ext.dir}/app" includes="*.jar"/>                
+        </delete>
+        <delete dir="${core.ext.dir}/lg3d-x11"/>
+        <delete dir="${rpm.dir}/tmp"/>
+        <delete dir="${rpm.dir}/BUILD"/>
+        <delete dir="${rpm.dir}/RPMS"/>
+        <delete file="${rpm.dir}/SPECS/lg3d.spec"/>
+
+        <antcall target="clean-incubator"/>
+        <antcall target="clean-demoapps"/>
+        <antcall target="clean-awt"/>
+        <!-- <antcall target="clean-wonderland"/> -->
+    </target>
+
+    <target name="cleanin" depends="init">
+        <delete dir="src/classes/org" includes="**/*.class"/>
+    </target>
+
+    <target name="run-dev-script" depends="init" description="Run dev mode using the startup script">
+        <exec dir="${scripts.dir}"
+            executable="${scripts.dir}/lg3d-dev" >
+        </exec>
+    </target>
+
+    <target name="run-app-script" depends="init" description="Run dev mode using the startup script">
+        <exec dir="${scripts.dir}"
+            executable="${scripts.dir}/lg3d-app" >
+        </exec>
+    </target>
+
+    <target name="run-dev" depends="init, jar-javaonly" description="Build and run dev mode without using a script">
+        <java classname="org.jdesktop.lg3d.displayserver.Main" fork="true">
+            <jvmarg value="-client"/>
+            <jvmarg value="-Xmx384m"/>
+            <jvmarg value="-Xincgc"/>
+            <jvmarg value="-Xms32m"/>
+            <jvmarg value="-XX:MaxGCPauseMillis=20"/>
+            <jvmarg value="-XX:CompileThreshold=500"/>
+            <jvmarg value="-XX:+UseAdaptiveSizePolicy"/>
+            <jvmarg value="-Dj3d.sortShape3DBounds=true"/>
+            <jvmarg value="-Dlg.configurl=file:///${src.dir}/etc/lg3d/lgconfig_1p_nox.xml"/>
+            <jvmarg value="-Dlg.etcdir=${src.dir}/etc/"/>
+            <jvmarg value="-Dlg.resourcedir=${src.dir}/resources/"/>
+            <jvmarg value="-Dlg.displayconfigurl=file:///${src.dir}/etc/lg3d/displayconfig/j3d1x1"/>
+            <!--<jvmarg value="-Dlg.configpath=resource:/"/>-->
+            <!--<jvmarg value="-Dlg.shaderdemo=true"/>-->
+            <!--<jvmarg value="-Dlg.robotmode=playback"/>-->
+            <!--<jvmarg value="-Dlg.robotfile=t1.lgbot"/>-->
+            <jvmarg value="-Dlg.appcodebase=file:///${core.ext.dir}/app"/>
+            <jvmarg value="-Dlg.maxfps=30"/>
+	    <jvmarg value="-Xbootclasspath/a:${build.lib.dir}/lg3d-awt-toolkit.jar"/>
+            <!-- Debug start -->
+            <jvmarg value="-Xdebug"/>
+            <jvmarg value="-Xrunjdwp:transport=dt_socket,server=y,address=8889,suspend=n"/>
+            <jvmarg value="-ea"/>
+            <!-- Debug end -->
+	    <syspropertyset refid="awt.toolkit.properties"/>
+	    <env key="${env.path.name}" path="${env.path.defvalue}"/>
+            <classpath>
+		<pathelement path="${j3d.classpath}"/>
+		<pathelement path="${javaext.classpath}"/>
+                <pathelement location="${build.lib.dir}/lg3d-core.jar"/>
+                <pathelement location="${build.lib.dir}/lg3d-awt-toolkit.jar"/>
+                <pathelement location="${core.ext.dir}/app/bgmanager.jar"/>
+                <pathelement location="${src.dir}"/>
+                <fileset dir="${core.ext.dir}">
+                    <include name="*.jar"/>
+                    <exclude name="odejava.jar"/>
+                    <exclude name="nwn-0.7.jar"/>
+                </fileset>
+            </classpath>
+        </java>
+    </target>
+    
+    <target name="run-appkittest" depends="init">
+        <java classname="org.jdesktop.lg3d.apps.appkit.Test" fork="true">
+            <classpath>
+		<pathelement path="${j3d.classpath}"/>
+                <pathelement location="${build.lib.dir}/lg3d-core.jar"/>
+                <pathelement location="${build.lib.dir}/lg3d-awt-toolkit.jar"/>
+                <pathelement location="${core.ext.dir}/j3d-contrib-utils.jar"/>
+            </classpath>
+	    <env key="${env.path.name}" path="${env.path.defvalue}"/>
+            <!-- Debug start -->
+<!--            <jvmarg value="-Xdebug"/>
+            <jvmarg value="-Xrunjdwp:transport=dt_socket,server=y,address=8881,suspend=n"/>
+            <jvmarg value="-ea"/>-->
+            <!-- Debug end -->
+        </java>        
+    </target>
+    
+    <target name="run-test" depends="init">
+        <java classname="org.jdesktop.lg3d.apps.swingtest.TestFrame" fork="true">
+            <classpath>
+		<pathelement location="${build.dir}/current/debug/lib/lg3d-demo-apps.jar"/>
+		<pathelement path="${j3d.classpath}"/>
+            </classpath>
+	    <env key="${env.path.name}" path="${env.path.defvalue}"/>
+            <!-- Debug start -->
+            <jvmarg value="-Xdebug"/>
+            <jvmarg value="-Xrunjdwp:transport=dt_socket,server=y,address=8881,suspend=n"/>
+            <jvmarg value="-ea"/>
+            <!-- Debug end -->
+        </java>
+    </target>
+    
+    <target name="run-dev-noincubator" description="Run dev mode without using a script, don't build the incubator project">
+        <property name="build.noincubator" value="true"/>
+        <antcall target="run-dev"/>
+    </target>
+
+    <target name="gc-dev" depends="init, jar-javaonly" description="Run memory profiler in dev mode without using a script">
+        <java classname="com.jb2works.reference.Launcher" fork="true">
+            <jvmarg value="-client"/>
+            <jvmarg value="-Xmx384m"/>
+            <jvmarg value="-Xincgc"/>
+            <jvmarg value="-Xms32m"/>
+            <jvmarg value="-XX:MaxGCPauseMillis=20"/>
+            <jvmarg value="-XX:CompileThreshold=500"/>
+            <jvmarg value="-XX:+UseAdaptiveSizePolicy"/>
+            <jvmarg value="-Dj3d.sortShape3DBounds=true"/>
+            <jvmarg value="-Dlg.configurl=file:///${src.dir}/etc/lg3d/lgconfig_1p_nox.xml"/>
+            <jvmarg value="-Dlg.etcdir=${src.dir}/etc/"/>
+            <jvmarg value="-Dlg.resourcedir=${src.dir}/resources/"/>
+            <jvmarg value="-Dlg.displayconfigurl=file:///${src.dir}/etc/lg3d/displayconfig/j3d1x1"/>
+	    <jvmarg value="-Xbootclasspath/a:${build.lib.dir}/lg3d-awt-toolkit.jar"/>
+            <!--<jvmarg value="-Dlg.shaderdemo=true"/>-->
+            <!--<jvmarg value="-Dlg.robotmode=playback"/>-->
+            <!--<jvmarg value="-Dlg.robotfile=t1.lgbot"/>-->
+	    <syspropertyset refid="awt.toolkit.properties"/>
+	    <env key="${env.path.name}" path="${env.path.defvalue}"/>
+            <classpath>
+                <pathelement location="${build.lib.dir}/lg3d-core.jar"/>
+                <pathelement location="${build.lib.dir}/lg3d-awt-toolkit.jar"/>
+                <pathelement location="${src.dir}"/>
+                <fileset dir="${core.ext.dir}">
+                    <include name="*.jar"/>
+                </fileset>
+            </classpath>
+            <arg value="org.jdesktop.lg3d.displayserver.Main"/>
+        </java>
+    </target>
+
+    <target name="run-app" depends="init, init-x11, jar-javaonly" description="Run app mode without using a script">
+        <property name="fws.lib" location="${build.platform.dir}/lib/${ostype}-${arch}"/>
+        <java classname="org.jdesktop.lg3d.displayserver.Main" fork="true">
+            <jvmarg value="-client"/>
+            <jvmarg value="-Xmx384m"/>
+            <jvmarg value="-Xincgc"/>
+            <jvmarg value="-Xms32m"/>
+            <jvmarg value="-XX:MaxGCPauseMillis=20"/>
+            <jvmarg value="-XX:CompileThreshold=500"/>
+            <jvmarg value="-XX:+UseAdaptiveSizePolicy"/>
+            <jvmarg value="-Dj3d.sortShape3DBounds=true"/>
+            <jvmarg value="-Dlg.configurl=file:///${src.dir}/etc/lg3d/lgconfig_1p_x.xml"/>
+            <jvmarg value="-Dlg.etcdir=${src.dir}/etc/"/>
+            <jvmarg value="-Dlg.resourcedir=${src.dir}/resources/"/>
+            <jvmarg value="-Dlg.fws.mode=app"/>
+            <jvmarg value="-Dlg.lgserverdisplay=:1"/>
+            <jvmarg value="-Dlg.fws.x11.interfaceRequired=0.1"/>
+            <jvmarg value="-Dlg.displayconfigurl=file:///${src.dir}/etc/lg3d/displayconfig/j3d1x1"/>
+            <jvmarg value="-Dlg.libraries.dso=${fws.lib}/libdso.so"/>
+            <jvmarg value="-Dlg.libraries.DamageEventBroker=${fws.lib}/libDamageEventBroker.so"/>
+            <jvmarg value="-Dlg.libraries.LightPipeWindow=${fws.lib}/libLightPipeWindow.so"/>
+            <jvmarg value="-Dlg.libraries.CookedEventPoller=${fws.lib}/libCookedEventPoller.so"/>
+	    <jvmarg value="-Xbootclasspath/a:${build.lib.dir}/lg3d-awt-toolkit.jar"/>
+	    <bootclasspath refid="awt.toolkit.bootclasspath"/>
+	    <syspropertyset refid="awt.toolkit.properties"/>
+	    <env key="${env.path.name}" path="${env.path.defvalue}"/>
+            <classpath>
+                <pathelement location="${build.lib.dir}/lg3d-core.jar"/>
+                <pathelement location="${build.lib.dir}/lg3d-awt-toolkit.jar"/>
+                <pathelement location="${src.dir}"/>
+		<pathelement path="${j3d.classpath}"/>
+                <fileset dir="${core.ext.dir}">
+                    <include name="*.jar"/>
+                </fileset>
+      </classpath>
+        </java>
+    </target>
+
+    <target name="profile-dev" depends="init, jar-javaonly" description="Run dev mode, using the NetBeans profiler">
+        <fail unless="netbeans.home">This target can only run inside the NetBeans IDE.</fail>
+        <nbprofiledirect>
+            <classpath>
+                <pathelement location="${build.lib.dir}/lg3d-core.jar"/>
+                <pathelement location="${build.lib.dir}/lg3d-awt-toolkit.jar"/>
+                <pathelement location="${core.ext.dir}/app/bgmanager.jar"/>
+                <pathelement location="${src.dir}"/>
+		<pathelement path="${j3d.classpath}"/>
+                <fileset dir="${core.ext.dir}">
+                    <include name="*.jar"/>
+                    <exclude name="odejava.jar"/>
+                    <exclude name="nwn-0.7.jar"/>
+                </fileset>
+            </classpath>
+        </nbprofiledirect>
+        
+        <java classname="org.jdesktop.lg3d.displayserver.Main" fork="true">
+            <jvmarg value="-client"/>
+            <jvmarg value="-Xmx384m"/>
+            <jvmarg value="-Xincgc"/>
+            <jvmarg value="-Xms32m"/>
+            <jvmarg value="-XX:MaxGCPauseMillis=20"/>
+            <jvmarg value="-XX:CompileThreshold=500"/>
+            <jvmarg value="-XX:+UseAdaptiveSizePolicy"/>
+            <jvmarg value="-Dj3d.sortShape3DBounds=true"/>
+            <jvmarg value="-Dlg.configurl=file:///${src.dir}/etc/lg3d/lgconfig_1p_nox.xml"/>
+            <jvmarg value="-Dlg.etcdir=${src.dir}/etc/"/>
+            <jvmarg value="-Dlg.resourcedir=${src.dir}/resources/"/>
+            <jvmarg value="-Dlg.displayconfigurl=file:///${src.dir}/etc/lg3d/displayconfig/j3d1x1"/>
+            <!--<jvmarg value="-Dlg.configpath=resource:/"/>-->
+            <!--<jvmarg value="-Dlg.shaderdemo=true"/>-->
+            <!--<jvmarg value="-Dlg.robotmode=playback"/>-->
+            <!--<jvmarg value="-Dlg.robotfile=t1.lgbot"/>-->
+            <jvmarg value="-Dlg.appcodebase=file:///${core.ext.dir}/app"/>
+            <jvmarg value="-Dlg.maxfps=30"/>
+            <jvmarg value="${profiler.info.jvmargs.agent}"/>
+	    <jvmarg value="-Xbootclasspath/a:${build.lib.dir}/lg3d-awt-toolkit.jar"/>
+	    <syspropertyset refid="awt.toolkit.properties"/>
+	    <env key="${env.path.name}" path="${env.path.defvalue}"/>
+            <!-- Debug start -->
+            <!--<jvmarg value="-Xdebug"/>
+            <jvmarg value="-Xrunjdwp:transport=dt_socket,server=y,address=8889,suspend=n"/>
+            <jvmarg value="-ea"/>-->
+            <!-- Debug end -->
+            <classpath>
+                <pathelement location="${build.lib.dir}/lg3d-core.jar"/>
+                <pathelement location="${build.lib.dir}/lg3d-awt-toolkit.jar"/>
+                <pathelement location="${core.ext.dir}/app/bgmanager.jar"/>
+                <pathelement location="${src.dir}"/>
+		<pathelement path="${j3d.classpath}"/>
+                <fileset dir="${core.ext.dir}">
+                    <include name="*.jar"/>
+                    <exclude name="odejava.jar"/>
+                    <exclude name="nwn-0.7.jar"/>
+                </fileset>
+            </classpath>
+        </java>
+    </target>
+
+    <target name="profile-app" depends="init, init-x11, jar-javaonly" description="Run app mode, using the NetBeans profiler">
+        <fail unless="netbeans.home">This target can only run inside the NetBeans IDE.</fail>
+        <property name="fws.lib"            location="${build.lib.dir}"/>
+        <nbprofile classname="org.jdesktop.lg3d.displayserver.Main">
+            <jvmarg value="-client"/>
+            <jvmarg value="-Xmx384m"/>
+            <jvmarg value="-Xincgc"/>
+            <jvmarg value="-Xms32m"/>
+            <jvmarg value="-XX:MaxGCPauseMillis=20"/>
+            <jvmarg value="-XX:CompileThreshold=500"/>
+            <jvmarg value="-XX:+UseAdaptiveSizePolicy"/>
+            <jvmarg value="-Dj3d.sortShape3DBounds=true"/>
+            <jvmarg value="-Dlg.configurl=file:///${src.dir}/etc/lg3d/lgconfig_1p_x.xml"/>
+            <jvmarg value="-Dlg.etcdir=${src.dir}/etc/"/>
+            <jvmarg value="-Dlg.resourcedir=${src.dir}/resources/"/>
+            <jvmarg value="-Dlg.fws.mode=app"/>
+            <jvmarg value="-Dlg.lgserverdisplay=:1"/>
+            <jvmarg value="-Dlg.fws.x11.interfaceRequired=0.1"/>
+            <jvmarg value="-Dlg.displayconfigurl=file:///${src.dir}/etc/lg3d/displayconfig/j3d1x1"/>
+            <jvmarg value="-Dlg.configpath=resource:/"/>
+            <jvmarg value="-Dlg.libraries.dso=${fws.lib}/libdso.so"/>
+            <jvmarg value="-Dlg.libraries.DamageEventBroker=${fws.lib}/libDamageEventBroker.so"/>
+            <jvmarg value="-Dlg.libraries.LightPipeWindow=${fws.lib}/libLightPipeWindow.so"/>
+            <jvmarg value="-Dlg.libraries.CookedEventPoller=${fws.lib}/libCookedEventPoller.so"/>
+	    <jvmarg value="-Xbootclasspath/a:${build.lib.dir}/lg3d-awt-toolkit.jar"/>
+	    <syspropertyset refid="awt.toolkit.properties"/>
+	    <env key="${env.path.name}" path="${env.path.defvalue}"/>
+            <classpath>
+                <pathelement location="${build.lib.dir}/lg3d-core.jar"/>
+                <pathelement location="${build.lib.dir}/lg3d-awt-toolkit.jar"/>
+                <pathelement location="${src.dir}"/>
+		<pathelement path="${j3d.classpath}"/>
+                <fileset dir="${core.ext.dir}">
+                    <include name="*.jar"/>
+                </fileset>
+            </classpath>
+        </nbprofile>
+    </target>
+</project>
+

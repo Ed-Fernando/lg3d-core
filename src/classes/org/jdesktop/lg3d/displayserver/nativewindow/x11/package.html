@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+  <head>
+    <title></title>
+  </head>
+  <body>
+  <p>
+  The X11 Window Integration module, which implements plumbing for 
+  communication between X server and SceneManager regarding application
+  execution status.  This part doesn't include X client visual capture 
+  integration, which can be found in the displayserver/fws/x11 directory.
+  </p>
+  
+  <p>
+  Classes in this directory implements the following interfaces for
+  X11 native window integration:
+    <ul>
+      <li><code>IntegrationModule</code></li>
+      <li><code>NativeWindowControl</code></li>
+    </ul>
+  And use the following interface in order to send notification to the 3D
+  window manager side:
+    <ul>
+        <li><code>NativeWindowMonitor</code></li>
+    </ul>
+  <code>NativeWindowLookAndFeel</code> implements this interface and
+  leaves all the method as abstract, so that extended look and feel
+  code will supply actions for the window management events.
+  Please note that the interfaces are very primitive at this moment
+  and still evolving.
+  </p>
+    
+  <p>
+  In order to implement reuqired features, this module includes a simple
+  X Window Manager.  The window manager is fully written in Java on top
+  of a Java X11 library called Escher.  Special thanks to Stephen Tse
+  for creating such a wonderful technology!
+  </p>
+  
+  <p>
+  The following diagram illustrates interaction between the 3D world
+  and the X11 native window world.
+  </p>
+  
+  <pre>
+  2D Native Window World <-----------------------------> 3D SceneManager World
+  ------------  ----------------  ---------------  ---------------------------
+  X Client      X11WindowManager  X11Client        NativeWindow3D  
+  application   class             class            class          
+  ------------  ----------------  ---------------  ---------------------------
+  Creation ---> CreateNotify ---> Instantiation
+   
+  Become   ---> MapNotify    ---> mapNotify() ---> visibilityChanged(true)  
+  visible       event                              This results in creating
+                                                   and displaying 3D counter
+                                                   part (Frame3D object)
+                                                   which the 3D scenemanager 
+                                                   interacts.
+                                                   
+                                                   
+     +--------- client.unmap <--- setVisible(false) <--- 3D-side initiated 
+     |                                                   minimization
+  Unmap taken place
+  (client initiated 
+  minimization starts here)
+     |
+     +--------> UnmapNotiry  ---> unmapNotity() ---> visibilityChanged(false)
+                event                                Performs minimization
+                                                     animation and become
+                                                     invisible.
+    
+                                                     
+     +--------- client.destroy() <--- destroy() <--- 3D-side initiated 
+     |                                               termination
+  Destroy taken place
+  (client initiated 
+  termination starts here)
+     |
+     +--------> DestroyNotify  --> destroyNotity() --> visibilityChanged(false)
+                event                                Performs termination
+                                                     animation, then detached 
+                                                     from the scene graph. 
+  
+  
+     +--------- client.move() <--- setLocation() <--- 3D-side initiated move
+     |                                                Move 3D counterpart
+     |                                                at the same time 
+     |                                                communicating with the
+     |                                                native counterpart
+     |                                                for better response.
+  Move taken place
+     |
+     +--------> ConfigureNotify --> configureNotity() --> locationChanged()
+                event                                   Performs nothing since
+                                                        the 3D part is already 
+                                                        moved.
+                                               * how best we can distinguish
+                                                 this from the following case?
+                                                 Or, always performing a long 
+                                                 round trip would be fine?
+  Client initiated move
+     |
+     +--------> ConfigureNotify  --> configureNotity() --> locationChanged()
+                event                                  Move the 3D counterpart.
+  
+                
+  Resize works in a similar manner.  However, note thatt there is 
+  an additional complication because of necessary texture size change.
+  </pre>
+  
+  </body>
+</html>

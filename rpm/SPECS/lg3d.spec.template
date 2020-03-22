@@ -1,0 +1,159 @@
+%define prefix /opt
+
+# please define some variables as follows before rpmbuild.
+# do not have to define these variable when build rpm with ant
+# - lg3d_version
+# - lg3d_build_time
+# - lg3d_tar_filename
+
+Summary: Project Looking Glass %{version} - %{release}
+Name: lg3d
+Version: %{lg3d_version}
+Release: %{lg3d_build_time}
+License: GPL
+Group: User Interface/Desktop
+Source0: %{lg3d_tar_filename}
+Source1: lg3d-session
+Source2: lg3d-dev
+Source3: javadoc-%{lg3d_tar_filename}
+#Source3: lg3d-logo.png
+#NoSource: 0 
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+# use when build rpm from cvs source code
+#BuildPreReq: unzip, apache-ant, jdk >= 1.5.0, jai >= 1.1.2, java3d >= 1.3.2
+# use when built jre,jai,java3d packages for lg3d
+#Prereq: lg3d-jre, lg3d-jai, lg3d-java3d
+Provides: libjawt.so libjvm.so libawt.so libjava.so libmawt.so libmlib_image.so libverify.so
+
+%package -n %{name}-javadoc
+Summary: Project Looking Glass Javadoc %{version} - %{release}
+Group: User Interface/Desktop
+%description -n %{name}-javadoc
+Javadoc (API Documentations) for Project Looking Glass %{version} - %{release}
+
+%description
+Project Looking Glass is a next generation 3D desktop interface for Linux environments.
+Project Looking Glass need 3D acceleration(OpenGL support), 24bit color depth support,
+JRE 1.5.0, Java3D 1.4.0 and JAI 1.1.2.
+
+%prep
+cp ../SOURCES/lg3d-session .
+cp ../SOURCES/lg3d-app .
+cp ../SOURCES/lg3d-dev .
+cp ../SOURCES/lg3d-setup .
+#cp ../SOURCES/lg3d-logo.png .
+tar xzf ../SOURCES/%{lg3d_tar_filename}
+if [ -d ../SOURCES/additional/lib/ext ]; then
+  cp ../SOURCES/additional/lib/ext/* lg3d/lib/ext
+fi
+
+tar xzf ../SOURCES/javadoc-%{lg3d_tar_filename}
+
+
+%build
+
+%install
+[ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
+mkdir -p $RPM_BUILD_ROOT%{prefix}/%{name}
+mkdir -p $RPM_BUILD_ROOT/usr/bin
+mkdir -p $RPM_BUILD_ROOT/usr/sbin
+mkdir -p $RPM_BUILD_ROOT/etc/X11
+mkdir -p $RPM_BUILD_ROOT/usr/share/pixmaps
+cp -r %{name}/* $RPM_BUILD_ROOT%{prefix}/%{name}/.
+
+chmod 755 `find $RPM_BUILD_ROOT%{prefix}/%{name} -name '*.so'`
+chmod 755 `find $RPM_BUILD_ROOT%{prefix}/%{name} -name '*.so.*'`
+#chmod 755 $RPM_BUILD_ROOT%{prefix}/%{name}/ext/lg3d-x11/%{build_arch}/lg3d-x11/exports/lib/*.so
+#chmod 755 $RPM_BUILD_ROOT%{prefix}/%{name}/ext/lg3d-x11/%{build_arch}/lg3d-x11/exports/lib/*.so.*
+#chmod 755 $RPM_BUILD_ROOT%{prefix}/%{name}/ext/lg3d-x11/%{build_arch}/lg3d-x11/exports/lib/locale/lib/common/*
+#chmod 755 $RPM_BUILD_ROOT%{prefix}/%{name}/lib/platform/%{build_arch}/lib/*
+
+
+
+install -m 755 lg3d-session $RPM_BUILD_ROOT/usr/bin
+install -m 755 lg3d-dev $RPM_BUILD_ROOT/usr/bin
+install -m 755 lg3d-app $RPM_BUILD_ROOT/usr/bin
+install -m 755 lg3d-setup $RPM_BUILD_ROOT/usr/sbin
+#install -m 644 lg3d-logo $RPM_BUILD_ROOT/usr/share/pixmaps
+
+%clean
+[ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
+rm -fr %{name}
+rm lg3d-session
+rm lg3d-dev
+rm lg3d-app
+rm lg3d-setup
+#rm lg3d-logo.png
+
+
+%pre
+
+%preun
+
+%post
+# Search java directory,
+# check jre version and whether jai,java3d exist.
+# And set JAVA_HOME to /usr/bin/lg3d-dev, /usr/bin/lg3d-session
+/usr/sbin/lg3d-setup
+
+# xorg.conf test
+test -e /etc/X11/xorg.conf && exit 0;
+ln -s /etc/X11/XF86Config /etc/X11/xorg.conf > /dev/null
+
+%postun
+
+%files
+%defattr(-,root,root)
+%{prefix}/%{name}/LICENSE.txt
+%{prefix}/%{name}/bin
+%dir %{prefix}/%{name}/docs
+%{prefix}/%{name}/ext
+%{prefix}/%{name}/ext-unbundled
+%{prefix}/%{name}/lib
+%{prefix}/%{name}/resources
+%config %{prefix}/%{name}/etc
+/usr/bin/lg3d-dev
+/usr/bin/lg3d-app
+/usr/bin/lg3d-session
+/usr/sbin/lg3d-setup
+#/usr/share/pixmaps/lg3d-logo.png
+
+%files -n %{name}-javadoc
+%{prefix}/%{name}/docs
+
+
+%changelog
+* Sat Dec 10  2005 Yasuhiro Fujitsuki <Yasuhiro.Fujitsuki@Sun.COM> 0.8.0-dev
+- devide into two packages, lg3d and lg3d-javadoc
+
+* Sat Jun 4 2005 Yasuhiro Fujitsuki <Yasuhiro.Fujitsuki@Sun.COM> 0.7.0-dev
+- added lg3d-app support 
+
+* Thu May 26 2005 Yasuhiro Fujitsuki <Yasuhiro.Fujitsuki@Sun.COM> 0.7.0-dev
+- changed to fit a new directory structure. 
+
+* Fri May 6 2005 Yasuhiro Fujitsuki <Yasuhiro.Fujitsuki@Sun.COM> 0.7.0-dev
+- fixed error when lg3d-session run (add chmod 755 *.so.*) and fix dependency error on old rpm environment(add Provides).
+
+* Sun May 1 2005 Yasuhiro Fujitsuki <Yasuhiro.Fujitsuki@Sun.COM> 0.7.0-dev
+- customized for ant build of lg3d-core
+
+* Thu Apr 21 2005 Yasuhiro Fujitsuki <Yasuhiro.Fujitsuki@Sun.COM> 0.6.2-3
+- add automatic java vm search algorithm in post section
+
+* Sun Apr 17 2005 Yasuhiro Fujitsuki <Yasuhiro.Fujitsuki@Sun.COM> 0.6.2-2
+- built package without lg3d-jre,lg3d-jai,lg3d-java3d version
+
+* Fri Apr 15 2005 Yasuhiro Fujitsuki <Yasuhiro.Fujitsuki@Sun.COM> 0.6.2-1
+- Updated to 0.6.2 release(lg3d-fcs-rel-0-6-2-linux-i586-0504141534.tar.gz)
+
+* Wed Apr 13 2005 Yasuhiro Fujitsuki <Yasuhiro.Fujitsuki@Sun.COM> 0.6.2-rc2-2
+- Add lg3d-logo.png, but lg3d-logo.png is not in this package now
+
+* Wed Apr 13 2005 Yasuhiro Fujitsuki <Yasuhiro.Fujitsuki@Sun.COM> 0.6.2-rc2-1
+- Updated to 0.6.2 RC2
+
+* Tue Apr 12 2005 Yasuhiro Fujitsuki <Yasuhiro.Fujitsuki@Sun.COM> 0.6.2-rc1-1
+- initial version
+
+

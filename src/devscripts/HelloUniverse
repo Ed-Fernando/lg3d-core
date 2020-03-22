@@ -1,0 +1,13 @@
+#!/bin/bash
+
+SCRIPTDIR=`dirname $0`
+. ${SCRIPTDIR}/setup
+
+CONFIG=lgconfig_1p_nox.xml
+export LGCONFIG="file://${SCRIPTDIR}/../etc/lg3d/${CONFIG}"
+
+export CONFIGDIR="-Dlg.configpath=../etc/lg3d-test"
+
+export DISP_CONFIG="-Dlg.displayconfigurl=file://${SCRIPTDIR}/../etc/lg3d/displayconfig/j3d1x1"
+
+java ${JVMARGS} -cp ${CLASSPATH} ${DEBUG_FLAGS} ${CONFIGDIR} -Dlg.etcdir=../etc/ -Dlg.configurl=${LGCONFIG} ${DISP_CONFIG} org.jdesktop.lg3d.apps.test.HelloUniverseApp | tee /var/tmp/hellouniverse.log 2>&1

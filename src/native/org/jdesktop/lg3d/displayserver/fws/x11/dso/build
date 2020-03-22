@@ -1,0 +1,55 @@
+#!/bin/csh -f
+
+set arch = `/bin/arch`
+if ($arch == i86pc) then
+    set os = solaris
+else
+if ($arch == i686) then
+    set os = linux
+else
+    echo "Cannot build LG X11 on architecture " $arch
+    exit 1
+endif
+endif
+
+# Allow the X libraries we use to be overridden by $LGX11HOME
+if (${?LGX11HOME} != 0) then
+    setenv LGX11HOME ../../../../../../../../ext/lg3d-x11/$os/$arch/lg3d-x11
+endif
+
+setenv BUILD_DIR $LGCORESRC/../build
+setenv BUILD_PLAT_DIR $BUILD_DIR/platform/$os/$arch
+setenv BUILD_PLAT_LIB_DIR $BUILD_PLAT_DIR/lib
+if (! -e $BUILD_PLAT_LIB_DIR) mkdir -p $BUILD_PLAT_LIB_DIR
+
+javah org.jdesktop.lg3d.displayserver.fws.x11.dso.DrawingSurfaceObjectAWT
+
+if ($os == linux) then
+    setenv OS_DEF  "-D__linux__"
+    setenv OS_INCL "-I$JAVA_HOME/include/linux"
+    setenv CC gcc
+    setenv LDFLAGS_SO "-shared -z lazyload"
+else
+    setenv OS_DEF  "-DSOLARIS"
+    setenv OS_INCL "-I$JAVA_HOME/include/solaris"
+    setenv CC cc
+    setenv LDFLAGS_SO "-Bdynamic -xF -G"
+endif
+
+setenv CFLAGS "-w $OS_DEF -I$JAVA_HOME/include $OS_INCL"
+
+setenv LIBS "-L$JAVA_HOME/jre/lib/i386 -ljawt -L$JAVA_HOME/jre/lib/i386/server -ljvm"
+
+/bin/rm -f *.o
+
+$CC DrawingSurfaceObjectAWT.c -c $CFLAGS -I. -I$LGX11HOME/include -I$JAVA_HOME/include 
+
+$CC $LDFLAGS_SO  -o libdso.so DrawingSurfaceObjectAWT.o $LIBS
+mv libdso.so $BUILD_PLAT_LIB_DIR
+
+
+
+
+
+
+

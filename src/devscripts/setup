@@ -1,0 +1,258 @@
+pushd ${SCRIPTDIR} > /dev/null
+SCRIPTDIR=`pwd`
+popd > /dev/null
+
+# Ant will change this to RELEASE when the release build is performed
+#_ export DEVELOPMENT='true' _#
+
+# Ant will enable this for Ubuntu package deployment
+#_ export UBUNTU='true' _#
+
+# Ant will enable this for Mega bundle package deployment
+#_ export MEGA='true' _#
+
+getdir()
+{
+# Return the directory path with the trailing /
+    cd $1
+    echo "`pwd`/"
+}
+
+if [ ${RELEASE:-0} == 0 ]; then
+  DEBUG="1"
+  export DEBUG_FLAGS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,address=8889,suspend=n -ea"
+fi
+
+LOGFILE="/var/tmp/lgserver.log"
+#
+# If the file already exists
+#
+if [ -f ${LOGFILE} ] ; then
+    #
+    # If it is writeable, then truncate the file,
+    # else send everything to stdout.
+    #
+    if [ -w ${LOGFILE} ] ; then
+	echo > ${LOGFILE}
+    else
+	LOGFILE="/dev/stdout"
+    fi
+#
+# else if the file doesnt exist, create it world-read-write so that
+# if someone else uses the system, the next person can log to 
+# the same file.
+#
+else
+    touch -f ${LOGFILE}
+    chmod a+rw ${LOGFILE}
+fi
+
+#export CONFIGDIR="-Dlg.configpath=../etc/lg3d-test"
+
+export PROFILE_FLAGS=""
+
+# Profile flags for the Java Memory Profiler (http://www.khelekore.org/jmp/)
+# export PROFILE_FLAGS="-Xrunjmp:nomethods,nomonitors"
+
+# Profile flags for Netbeans Profiler
+# export PROFILE_FLAGS="-agentpath:/opt/netbeans-4.1/profiler1/modules/profiler-ea-libs/deployed/jdk15/linux/libprofilerinterface.so=/opt/netbeans-4.1/profiler1/modules/profiler-ea-libs,5140"
+
+export LG_SETTINGS=""
+
+# Uncomment the following line to see the experimental 3D background
+#export LG_SETTINGS="${LG_SETTINGS} -Dlg.3dbackground=true"
+
+# Uncomment the following line to enable the physics engine
+#export LG_SETTINGS="${LG_SETTINGS} -Dlg.physics=true"
+
+if [ -x /bin/arch ]; then
+  export ARCH=`/bin/arch`
+else
+  export ARCH=`uname -m`
+fi
+if [ ${OS:-0} == 0 ]; then
+  if [ ${OSTYPE:-0} == 0 ]; then
+    if [ "$ARCH" == "i86pc" ]; then
+      export OS="solaris"
+    elif [ `uname -s` == "Linux" ]; then
+      export OS="linux"
+    else
+      export OS="Unknown"
+    fi
+  elif [ "${OSTYPE}" == "linux-gnu" ]; then
+  	export OS="linux"
+  else
+    export OS=`echo ${OSTYPE} | cut -c1-7`
+  fi
+  if [ "$ARCH" == "x86_64" ]; then
+      export ARCH="i686"
+  fi
+fi
+
+if [ ${UBUNTU:-0} == "true" ]; then
+    ETCDIR="/etc/"
+    RESOURCEDIR=`getdir ${SCRIPTDIR}/../resources/`
+    export JAVA_HOME="/usr/lib/jvm/java-6-sun"
+    export LGCONFIG="file:///etc/lg3d/lgconfig_1p_x.xml"
+	# add java3d to the classpath
+	EXTDIR=`getdir ${SCRIPTDIR}/../ext/`
+	export CLASSPATH="${EXTDIR}/j3dcore.jar:${EXTDIR}/j3dutils.jar:${EXTDIR}/vecmath.jar"
+elif [ ${MEGA:-0} == "true" ]; then
+    ETCDIR=`getdir ${SCRIPTDIR}/../../../../etc/`
+    RESOURCEDIR=`getdir ${SCRIPTDIR}/../resources/`
+    export JAVA_HOME=`getdir ${SCRIPTDIR}/../../lg3d-jdk`
+    export LGCONFIG="file:///${ETCDIR}/lg3d/lgconfig_1p_x.xml"
+else
+    ETCDIR=`getdir ${SCRIPTDIR}/../etc/`
+    RESOURCEDIR=`getdir ${SCRIPTDIR}/../resources/`
+    if [ "${OS}" == "Windows_NT" ]; then
+        ETCDIR=`cygpath -mp ${ETCDIR}`
+    fi
+
+    . ${ETCDIR}/lg3d/build-platform
+    export BUILDPLATFORM=`getdir ${SCRIPTDIR}/../../${BUILDPLATFORM}`
+fi
+
+# Set path for etc directory
+export LG_SETTINGS="${LG_SETTINGS} -Dlg.etcdir=${ETCDIR} -Dlg.resourcedir=${RESOURCEDIR}"
+
+if [ ${RELEASE:-0} == 0 ]; then
+  # Test
+  LGDIR=`getdir ${SCRIPTDIR}/../..`
+  export LGCOREEXTDIR="${LGDIR}/ext"
+  export FWSLIB="${BUILDPLATFORM}/lib:$LGCOREEXTDIR/escher/platform/${OS}/${ARCH}/lib"
+else
+  # Release
+  LGDIR=`getdir ${SCRIPTDIR}/..`
+  export LGCOREEXTDIR="${LGDIR}/ext"
+#  if [ ${UBUNTU:-0} == "true" ]; then
+#     export FWSLIB="/usr/share/lg3d/lib:$LGCOREEXTDIR/escher/platform/${OS}/${ARCH}/lib"
+#  else
+     export FWSLIB="${LGDIR}/lib:$LGCOREEXTDIR/escher/platform/${OS}/${ARCH}/lib"
+#  fi
+
+fi
+
+
+if [ ${JAVA_HOME:-0} == 0 ]; then
+  if [ "${OS}" == "Windows_NT" ]; then
+    #export JAVA_HOME="/cygdrive/c/Program\ Files/Java/jdk1.6.0"
+    export JAVA_HOME="/usr/java/jdk1.6.0"
+  else
+    export JAVA_HOME=`ls -d1 /usr/java/jdk1.6.0 | tail -1`
+  fi
+fi
+
+
+# TODO: necessary for cep kludge. Eventually can remove
+PATH="$PATH:${LGDIR}/lib/i386"
+
+if [ ${CONFIGDIR:-0} == 0 ]; then
+  export CONFIGDIR=""
+fi
+
+if [ ${LGCONFIG:-0} == 0 ]; then
+  if [ ${RELEASE:-0} == 0 ]; then
+    export LGCONFIG="file://${LGDIR}/src/etc/lg3d/lgconfig_1p_x.xml"
+  else
+    export LGCONFIG="file://${LGDIR}/etc/lg3d/lgconfig_1p_x.xml"
+  fi
+fi
+
+if [ "${LG_SETTINGS:-0}" == "0" ]; then
+  export LG_SETTINGS=""
+fi
+
+if [ "${CLASSPATH:-0}" == "0" ]; then
+  export CLASSPATH=""
+fi
+
+if [ "${DEBUG_FLAGS:-0}" == "0" ]; then
+  export DEBUG_FLAGS=""
+fi
+
+if [ ${LD_LIBRARY_PATH:-0} == 0 ]; then
+    export LD_LIBRARY_PATH=""
+fi
+
+if [ "${RELEASE:-0}" == "0" ]; then
+  if [ ${LGX11HOME:-0} == 0 ]; then
+    export LGX11HOME=${BUILDPLATFORM}/lib/${OS}-${ARCH}/lg3d-x11
+  fi
+  export CLASSPATH="${BUILDPLATFORM}/lib/lg3d-core.jar:${BUILDPLATFORM}/lib/lg3d-demo-apps.jar:${LGCOREEXTDIR}/j3d-contrib-utils.jar:${LGCOREEXTDIR}/escher-0.2.2.lg.jar:${LGCOREEXTDIR}/satin-v2.3.jar:${LGCOREEXTDIR}/app/bgmanager.jar:${CLASSPATH}"
+  export BOOTCLASSPATH="${BUILDPLATFORM}/lib/lg3d-awt-toolkit.jar:${BUILDPLATFORM}/lib/fws-x11-kbd-utils.jar"
+  export LD_LIBRARY_PATH=${BUILDPLATFORM}/lib/${OS}-${ARCH}:${LD_LIBRARY_PATH}
+else
+  if [ ${LGX11HOME:-0} == 0 ]; then
+    export LGX11HOME=${LGDIR}/lib/${OS}-${ARCH}/lg3d-x11
+  fi
+  export CLASSPATH="${LGDIR}/lib/lg3d-core.jar:${LGDIR}/lib/lg3d-demo-apps.jar:${LGCOREEXTDIR}/j3d-contrib-utils.jar:${LGCOREEXTDIR}/escher-0.2.2.lg.jar:${LGCOREEXTDIR}/satin-v2.3.jar:${LGCOREEXTDIR}/app/bgmanager.jar:${CLASSPATH}"
+  export BOOTCLASSPATH="${LGDIR}/lib/lg3d-awt-toolkit.jar:${LGDIR}/lib/fws-x11-kbd-utils.jar"
+  export LD_LIBRARY_PATH=${LGDIR}/lib/${OS}-${ARCH}:${LD_LIBRARY_PATH}
+fi
+
+# If cygwin convery classpath to correct format
+if [ "${OS}" == "Windows_NT" ]; then
+  export CLASSPATH=`cygpath -mp ${CLASSPATH}`
+fi
+
+# Select correct awt toolkit
+if [ "${OS}" == "Windows_NT" ]; then
+  export TOOLKIT="-Dawt.toolkit=org.jdesktop.lg3d.awt.wlg3dtoolkit"
+else
+  export TOOLKIT="-Dawt.toolkit=org.jdesktop.lg3d.awt.xlg3dtoolkit"
+fi
+
+# Required for stable operation on Nvidia
+# On many cards this uses busy wait which consumes way to much CPU
+#export __GL_SYNC_TO_VBLANK=1
+
+PATH="${JAVA_HOME}/bin:$PATH"
+
+export DISPLAY=":0.0"
+
+export RMI_PORT="44817"
+
+# JVM arguments for GC configuration
+COMPILER="-client -XX:CompilerThreadPriority=4"
+#COMPILER="-client -XX:-UseThreadPriorities"
+#COMPILER="-server"
+HEAP="-Xms128m -Xmx256m"
+# HEAP="-XX:PermSize=16m -XX:MaxPermSize=24m -XX:NewSize=128m -XX:MaxNewSize=128m -Xms256m -Xmx256m"
+# HEAP="-Xms32m -Xmx384m"
+# HEAP="-Xmx512m"
+# Note: it is necessary to use the concurrent mark-and-sweep collector
+# in order to avoid the following bug in the Nvidia 8762 driver:
+# http://download.nvidia.com/solaris/1.0-8762/README/appendix-m.html
+# "libGL DSO finalizer and pthreads"
+COLLECTOR="-XX:+UseConcMarkSweepGC -XX:+DisableExplicitGC"
+# COLLECTOR="-Xincgc"
+#OTHER="-agentlib:yjpagent"
+OTHER=""
+#OTHER=" -agentpath:/opt/netbeans/profiler1/lib/deployed/jdk15/linux/libprofilerinterface.so=~/.netbeans/4.0/lib,5140b"
+# OTHER="-XX:MaxGCPauseMillis=20 -XX:CompileThreshold=500"
+APP_CODEBASE="-Dlg.appcodebase=file://${LGCOREEXTDIR}/app"
+JAVA3D="-Dj3d.useFreeLists=false"
+JVMARGS="$COMPILER $HEAP $COLLECTOR $APP_CODEBASE $OTHER $JAVA3D"
+
+# Uncomment to enable the frame counter
+# The frame counter will print the average frame rate to stderr
+# every 5 seconds or so.
+# 
+#export LG_SETTINGS="${LG_SETTINGS} -Dlg.fws.frameCounterEnable"
+
+# Enable LG3D/AWT toolkit implementation
+export LG_SETTINGS="${LG_SETTINGS} -Dlg.use3dtoolkit=true"
+
+echo
+echo "Starting up Project Looking Glass..."
+echo
+
+if [ ${DEBUG:-0} != 0 ]; then
+    echo "Log file         : ${LOGFILE}"
+    echo "LG3D Dir         : ${LGDIR}"
+    echo "X Server Version : `cat ${LGX11HOME}/VERSION`"
+    echo "JAVA_HOME        : ${JAVA_HOME}"
+    echo "LGX11HOME        : ${LGX11HOME}"
+    echo
+fi

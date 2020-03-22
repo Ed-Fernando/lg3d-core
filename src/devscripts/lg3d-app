@@ -1,0 +1,199 @@
+#!/bin/bash -x
+#
+# lg3d-app [<options>]
+#
+# Run the LG desktop as a normal application (in a window) under
+# the control of another window system. This mode is the same
+# as lg3d-dev but with the addition of native window support.
+
+usage()
+{
+    echo
+    echo "lg3d-app [<options>]"
+    echo "    -f               : Run in the no-border-full-screen mode" 
+    echo "    -xs|-ds          : Start only one of display server or the X server"
+    echo "    -D<name>=<value> : define JVM property for the display server"
+    echo "    -X<java-option>  : pass not-standard X option to java"
+    echo "    -h               : print this help"
+    echo
+
+    exit $1
+}
+
+DISPCONFIG="j3d1x1"
+START_XS=1
+START_DS=1
+
+# Set this to run gdb on the X server
+DEBUG_XS=0
+
+# Additional JVM options passed to the display server
+DS_JVM_OPTS=
+
+while [ $# -gt 0 ]
+do
+    case "$1" in
+    -f)     DISPCONFIG="j3d1x1-nbfs"            ;;
+    -xs)    START_XS=1  ; START_DS=0		;;
+    -ds)    START_XS=0	; START_DS=1	    	;;
+    -dxs)   DEBUG_XS=1				;;
+    -D*)    DS_JVM_OPTS="${DS_JVM_OPTS} $1"	;;
+    -X*)    DS_JVM_OPTS="${DS_JVM_OPTS} $1"	;;
+    -agen*) DS_JVM_OPTS="${DS_JVM_OPTS} $1"	;;
+    -yjp)   DS_JVM_OPTS="${DS_JVM_OPTS} -agentlib:yjpagent"		;;
+    -jc)    DS_JVM_OPTS="${DS_JVM_OPTS} -Dcom.sun.management.jmxremote"	;;
+    -h*)    usage 0				;;
+    *)      usage 1				;;
+    esac
+
+    shift
+done
+
+# TODO: currently, this assumes that the users X display is always :0.
+# It would be nice to be more flexible than this.
+USER_DISPLAY=":0"
+LG_DISPLAY=":1"
+
+SCRIPTDIR=`dirname $0`
+. ${SCRIPTDIR}/setup
+
+if [ -e /usr/share/fonts/X11 ]; then
+    # Debian Etch and Ubuntu Edgy
+    # Note: fix for 705: this we need to check for 
+    # this directory first because upgrading from
+    # Dapper to Edgy leaves a stale Dapper font 
+    # directory (/usr/share/X11/fonts) around.
+    FP=/usr/share/fonts/X11
+    COARG="-co /usr/share/X11/rgb"
+else
+    if [ -e /usr/share/fonts/100dpi ]; then
+	# Gentoo Sabayon
+	FP=/usr/share/fonts
+	COARG="-co /usr/share/X11/rgb"
+    else
+	if [ -e /usr/share/X11/fonts ]; then
+            # Base system is Xorg 7.0 (e.g. FC5, Dapper)
+            FP=/usr/share/X11/fonts
+            if   [ -e /usr/share/X11/rgb.txt ]; then
+                # Fedora Core 5
+                COARG="-co /usr/share/X11/rgb"
+            elif [ -e /etc/X11/rgb.txt ]; then
+                COARG="-co /etc/X11/rgb"
+            else
+                echo "Error: Cannot determine location of the X11 color names file"
+                COARG=""
+            fi
+        else
+            # Base system is pre-Xorg 7.0 (e.g. SUSE 9.1, FC4, Breezy)
+            FP=/usr/X11R6/lib/X11/fonts
+            COARG=""
+        fi
+    fi
+fi
+
+XS_EXEC="Xvfb"
+# TODO: 16 bit depth support
+XS_ARGS="$LG_DISPLAY -screen 0 1280x1024x24 +extension Composite -fp $FP/misc,$FP/misc:unscaled,$FP/75dpi,$FP/75dpi/:unscaled,$FP/Type1,$FP/75dpi,$FP/URW,$FP/Speedo,$FP/truetype,$FP/uni:unscaled,/opt/kde3/share/fonts,/var/lib/defoma/x-ttcidfont-conf.d/dirs/TrueType $COARG"
+XSERVER="${LGX11HOME}/programs/Xserver/$XS_EXEC"
+XS_CMD="$XSERVER $XS_ARGS"
+
+# Start the X server
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${LGX11HOME}/exports/lib"
+if [ "$START_XS" == "1" ]; then
+  #pkill $XS_EXEC &> /dev/null
+  # lg3d-app can only be run from within a gdm/kdm session if 
+  # this env var is unset
+  unset XAUTHORITY; 
+  if [ "$DEBUG_XS" == "1" ]; then
+    if [ "$OS" == "linux" ]; then
+      gdb $XSERVER
+    else
+      dbx $XSERVER
+    fi
+  else
+    if [ ! -e $XSERVER ]; then
+      echo "ERROR:"
+      echo "Cannot find Xserver executable: $xserver."
+      echo "Either the environment variable LGX11HOME is not set properly"
+      echo "or lg3d-core was not built properly with X11 support."
+      echo "For instructions on how to build lg3d-core with X11 support"
+      echo "refer to the Project Looking Glass Developers Guide."
+      exit 1
+    fi
+    if [ "$START_DS" != "1" ]; then
+        ($XS_CMD)
+    else
+        ($XS_CMD & sleep 3 )
+    fi
+  fi
+fi
+
+if [ "$START_DS" != "1" ]; then
+  exit 0
+fi
+
+if [ "$OS" == "solaris" ]; then
+  export PATH="/usr/openwin/bin:$PATH"
+fi
+
+export DISPLAY="$USER_DISPLAY"
+
+# TODO: why is it necessary to grant access to all hosts 
+# to the user display? No xhost should be required here 
+# at all! And xhost +`hostname` doesn't work. 
+# Only xhost + works!
+if [ "$OS" == "linux" ]; then
+  if [ -x /usr/bin/xhost ] ; then
+      /usr/bin/xhost +
+  else
+      /usr/bin/X11/xhost +
+  fi
+else
+  /usr/openwin/bin/xhost +
+fi
+
+CONFIG="lgconfig_1p_x.xml"
+
+export LGCONFIG="file:///${ETCDIR}/lg3d/${CONFIG}"
+export DISP_CONFIG="-Dlg.displayconfigurl=file:///${ETCDIR}/lg3d/displayconfig/${DISPCONFIG}"
+export LG_SETTINGS="${LG_SETTINGS} -Dlg.fws.mode=app -Dlg.lgserverdisplay=${LG_DISPLAY} ${TOOLKIT} ${DS_JVM_OPTS}"
+
+INT_REQUIRED=`${SCRIPTDIR}/lg3d-x11-interface-required`
+export LG_SETTINGS="${LG_SETTINGS} -Dlg.fws.x11.interfaceRequired=${INT_REQUIRED}"
+
+if [ ${LD_LIBRARY_PATH:-0} == 0 ]; then
+  export LD_LIBRARY_PATH=""
+fi
+
+export LD_LIBRARY_PATH="${LGX11HOME}/exports/lib:${LD_LIBRARY_PATH}:${FWSLIB}"
+
+# comment out the following until we start uring RMI again
+# pkill -f "rmiregistry ${RMI_PORT}"
+# sleep 1
+# rmiregistry ${RMI_PORT} &
+
+JAVACMD="${JAVA_HOME}/bin/java ${JVMARGS} -Xbootclasspath/a:${BOOTCLASSPATH} ${PROFILE_FLAGS} ${DEBUG_FLAGS} ${CONFIGDIR} -Dj3d.sortShape3DBounds=true -Dlg.configurl=${LGCONFIG} ${DISP_CONFIG} ${LG_SETTINGS} org.jdesktop.lg3d.displayserver.Main"
+
+echo "LG3D Dir         : ${LGDIR}"           >> ${LOGFILE}
+echo "LGCONFIG         : ${LGCONFIG}"        >> ${LOGFILE}
+echo "LG_SETTINGS      : ${LG_SETTINGS}"     >> ${LOGFILE}
+echo "LGX11HOME        : ${LGX11HOME}"       >> ${LOGFILE}
+if [ -f ${LGX11HOME}/VERSION ] ; then
+echo "X Server Version : `cat ${LGX11HOME}/VERSION`" >> ${LOGFILE}
+else
+echo "X Server Version : NOT AVAILABLE!"     >> ${LOGFILE}
+fi
+echo "JAVA_HOME        : ${JAVA_HOME}"       >> ${LOGFILE}
+echo "CLASSPATH        : ${CLASSPATH}"       >> ${LOGFILE}
+echo "PATH             : ${PATH}"            >> ${LOGFILE}
+echo "LD_LIBRARY_PATH  : ${LD_LIBRARY_PATH}" >> ${LOGFILE}
+echo "JAVACMD          : ${JAVACMD}"         >> ${LOGFILE}
+
+#${JAVACMD} 2>&1 | tee -a ${LOGFILE} | grep "SEVERE\|WARNING\|ClassVersionError"
+${JAVACMD} 
+
+# We only reach here when the displayserver exits.
+# A this time, bring down the X server, if necessary
+if [ "$START_XS" == 1 ]; then
+  pkill $XS_EXEC &> /dev/null
+fi

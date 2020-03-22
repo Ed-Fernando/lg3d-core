@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<java version="1.5.0" class="java.beans.XMLDecoder">
+
+<!--
+startmenu.lgcfg - Basic Start Menu configuration file
+-->
+ <!-- Start menu properties -->
+
+ <!-- do StartMenuConfig stuff in glassy.lgcfg in order to workaround Issue 524 -->
+ 
+ <!-- Menu groups -->
+ <object class="org.jdesktop.lg3d.scenemanager.utils.startmenu.StartMenuGroupConfig">
+  <void property="defaultGroup">
+   <boolean>true</boolean>
+  </void>
+  <void property="desc">
+   <string>Main menu group</string>
+  </void>
+  <void property="groupLinks">
+   <array class="java.lang.String" length="7">
+    <void index="0">
+     <string>Internet</string>
+    </void>
+    <void index="1">
+     <string>Utilities</string>
+    </void>
+    <void index="2">
+     <string>Games</string>
+    </void>
+    <void index="3">
+     <string>Media</string>
+    </void>
+    <void index="4">
+     <string>Office</string>
+    </void>
+    <void index="5">
+     <string>Demos</string>
+    </void>
+    <void index="6">
+     <string>Developers</string>
+    </void>
+   </array>
+  </void>
+  <void property="name">
+   <string>Main</string>
+  </void>
+ </object>
+ <object class="org.jdesktop.lg3d.scenemanager.utils.startmenu.StartMenuGroupConfig">
+  <void property="desc">
+   <string>Applications</string>
+  </void>
+  <void property="groupLinks">
+   <array class="java.lang.String" length="1">
+    <void index="0">
+     <string>Main</string>
+    </void>
+   </array>
+  </void>
+  <void property="name">
+   <string>Applications</string>
+  </void>
+ </object>
+ <object class="org.jdesktop.lg3d.scenemanager.utils.startmenu.StartMenuGroupConfig">
+  <void property="desc">
+   <string>Office</string>
+  </void>
+  <void property="groupLinks">
+   <array class="java.lang.String" length="2">
+    <void index="0">
+     <string>Main</string>
+    </void>
+    <void index="1">
+     <string>Internet</string>
+    </void>
+   </array>
+  </void>
+  <void property="name">
+   <string>Office</string>
+  </void>
+ </object>
+ <object class="org.jdesktop.lg3d.scenemanager.utils.startmenu.StartMenuGroupConfig">
+  <void property="desc">
+   <string>Internet Tools</string>
+  </void>
+  <void property="groupLinks">
+   <array class="java.lang.String" length="4">
+    <void index="0">
+     <string>Utilites</string>
+    </void>
+    <void index="1">
+     <string>Main</string>
+    </void>
+    <void index="2">
+     <string>Media</string>
+    </void>
+    <void index="3">
+     <string>Office</string>
+    </void>
+   </array>
+  </void>
+  <void property="name">
+   <string>Internet</string>
+  </void>
+ </object>
+ <object class="org.jdesktop.lg3d.scenemanager.utils.startmenu.StartMenuGroupConfig">
+  <void property="desc">
+   <string>Multimedia Apps</string>
+  </void>
+  <void property="groupLinks">
+   <array class="java.lang.String" length="2">
+    <void index="0">
+     <string>Internet</string>
+    </void>
+    <void index="1">
+     <string>Main</string>
+    </void>
+   </array>
+  </void>
+  <void property="name">
+   <string>Media</string>
+  </void>
+ </object>
+ <object class="org.jdesktop.lg3d.scenemanager.utils.startmenu.StartMenuGroupConfig">
+  <void property="groupLinks">
+   <array class="java.lang.String" length="2">
+    <void index="0">
+     <string>Internet</string>
+    </void>
+    <void index="1">
+     <string>Main</string>
+    </void>
+   </array>
+  </void>
+  <void property="name">
+   <string>Utilities</string>
+  </void>
+ </object>
+ <object class="org.jdesktop.lg3d.scenemanager.utils.startmenu.StartMenuGroupConfig">
+  <void property="groupLinks">
+   <array class="java.lang.String" length="1">
+    <void index="0">
+     <string>Main</string>
+    </void>
+   </array>
+  </void>
+  <void property="name">
+   <string>Games</string>
+  </void>
+ </object>
+
+ <object class="org.jdesktop.lg3d.scenemanager.utils.startmenu.StartMenuGroupConfig">
+  <void property="groupLinks">
+   <array class="java.lang.String" length="2">
+    <void index="0">
+     <string>Main</string>
+    </void>
+    <void index="1">
+     <string>Demos</string>
+    </void>
+   </array>
+  </void>
+  <void property="name">
+   <string>Tests</string>
+  </void>
+ </object>
+
+ <object class="org.jdesktop.lg3d.scenemanager.utils.startmenu.StartMenuGroupConfig">
+  <void property="groupLinks">
+   <array class="java.lang.String" length="2">
+    <void index="0">
+     <string>Main</string>
+    </void>
+    <void index="1">
+     <string>Demos</string>
+    </void>
+   </array>
+  </void>
+  <void property="name">
+   <string>Early Prototypes</string>
+  </void>
+ </object>
+
+ <object class="org.jdesktop.lg3d.scenemanager.utils.startmenu.StartMenuGroupConfig">
+  <void property="desc">
+   <string>Developers</string>
+  </void>
+  <void property="groupLinks">
+   <array class="java.lang.String" length="1">
+    <void index="0">
+     <string>Main</string>
+    </void>
+   </array>
+  </void>
+  <void property="name">
+   <string>Developers</string>
+  </void>
+ </object>
+ <object class="org.jdesktop.lg3d.scenemanager.utils.startmenu.StartMenuGroupConfig">
+  <void property="desc">
+   <string>Demos</string>
+  </void>
+  <void property="groupLinks">
+   <array class="java.lang.String" length="3">
+    <void index="0">
+     <string>Main</string>
+    </void>
+    <void index="1">
+     <string>Tests</string>
+    </void>
+    <void index="2">
+     <string>Early Prototypes</string>
+    </void>
+   </array>
+  </void>
+  <void property="name">
+   <string>Demos</string>
+  </void>
+ </object>
+
+ <!-- Menu Items -->
+ <object class="org.jdesktop.lg3d.scenemanager.utils.startmenu.StartMenuItemConfig">
+  <void property="command">
+   <string>xterm</string>
+  </void>
+  <void property="desc">
+   <string>Terminal</string>
+  </void>
+  <void property="displayResourceType">
+   <string>ICON</string>
+  </void>
+  <void property="displayResourceUrlName">
+   <string>resource:///resources/images/icon/system.png</string>
+  </void>
+  <void property="menuGroup">
+   <string>Utilities</string>
+  </void>
+  <void property="name">
+   <string>xterm</string>
+  </void>
+ </object>
+ <!--
+ <object class="org.jdesktop.lg3d.scenemanager.utils.startmenu.StartMenuItemConfig">
+  <void property="command">
+   <string>xcalc</string>
+  </void>
+  <void property="desc">
+   <string>Calculator</string>
+  </void>
+  <void property="displayResourceType">
+   <string>ICON</string>
+  </void>
+  <void property="displayResourceUrlName">
+   <string>resource:///resources/images/icon/system.png</string>
+  </void>
+  <void property="menuGroup">
+   <string>Utilities</string>
+  </void>
+  <void property="name">
+   <string>xcalc</string>
+  </void>
+ </object>
+ -->
+
+ <!-- Internet Menu -->
+ <object class="org.jdesktop.lg3d.scenemanager.utils.startmenu.StartMenuItemConfig">
+  <void property="command">
+   <string>firefox</string>
+  </void>
+  <void property="desc">
+   <string>Firefox Web Browser</string>
+  </void>
+  <void property="displayResourceType">
+   <string>ICON</string>
+  </void>
+  <void property="displayResourceUrlName">
+   <string>resource:///resources/images/icon/firefox-icon.png</string>
+  </void>
+  <void property="menuGroup">
+   <string>Internet</string>
+  </void>
+  <void property="name">
+   <string>Firefox</string>
+  </void>
+ </object>
+ <object class="org.jdesktop.lg3d.scenemanager.utils.startmenu.StartMenuItemConfig">
+  <void property="command">
+   <string>mozilla-thunderbird</string>
+  </void>
+  <void property="alternateCommands">
+   <array class="java.lang.String" length="1">
+    <void index="0">
+     <string>thunderbird</string>
+    </void>
+   </array>
+  </void>
+  <void property="desc">
+   <string>Thunderbird Email Client</string>
+  </void>
+  <void property="displayResourceType">
+   <string>ICON</string>
+  </void>
+  <void property="displayResourceUrlName">
+   <string>resource:///resources/images/icon/mozilla-thunderbird-icon.png</string>
+  </void>
+  <void property="menuGroup">
+   <string>Internet</string>
+  </void>
+  <void property="name">
+   <string>Thunderbird</string>
+  </void>
+ </object>
+
+ <!-- Developers Menu -->
+ <object class="org.jdesktop.lg3d.scenemanager.utils.startmenu.StartMenuItemConfig">
+  <void property="command">
+   <string>netbeans</string>
+  </void>
+  <void property="alternateCommands">
+   <array class="java.lang.String" length="1">
+    <void index="0">
+     <string>/opt/netbeans/bin/netbeans</string>
+    </void>
+   </array>
+  </void>
+  <void property="desc">
+   <string>Netbeans</string>
+  </void>
+  <void property="displayResourceType">
+   <string>ICON</string>
+  </void>
+  <void property="displayResourceUrlName">
+   <string>resource:///resources/images/icon/netbeans-icon.png</string>
+  </void>
+  <void property="menuGroup">
+   <string>Developers</string>
+  </void>
+  <void property="name">
+   <string>Netbeans</string>
+  </void>
+ </object>
+<object class="org.jdesktop.lg3d.scenemanager.utils.startmenu.StartMenuItemConfig">
+  <void property="command">
+   <string>firefox http://lg3d-core.dev.java.net</string>
+  </void>
+  <void property="desc">
+   <string>Lg3d Homepage</string>
+  </void>
+  <void property="displayResourceType">
+   <string>ICON</string>
+  </void>
+  <void property="displayResourceUrlName">
+   <string>resource:///resources/images/icon/lg3d-logo.png</string>
+  </void>
+  <void property="menuGroup">
+   <string>Developers</string>
+  </void>
+  <void property="name">
+   <string>Lg3d Homepage</string>
+  </void>
+ </object>
+</java>

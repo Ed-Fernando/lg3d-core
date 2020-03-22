@@ -1,0 +1,83 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+  <head>
+    <title></title>
+  </head>
+  <body>
+  <p>
+  The LG Native Window Integration utility classes.
+  </p>
+
+  <p>
+  [Need Paul's review]
+  The two primary design goals are (1) allow pluggable Look and Feel, 
+  (2) encapsulate complexity around native window caputure and communication.
+  The classes in this package tries to abstract and hide all the complexity
+  around the native application visual caputure as well as necessary 
+  communication with the application side.
+  </p>
+  
+  <p>
+  <code>NativeWindow3D</code> is the top level class with which
+  <code>SceneManager</code> interact.  It extends <code>Frame3D</code>
+  and behaves just like another 3D application.
+  It also implements the methods declared in <code>NativeWindowMonitor</code>,
+  which are used for the native 2D window manager to give notifications
+  about status changes, etc.  The implementation, in turn, uses 
+  <code>NativeWindowControl</code> interface to communicate back to the
+  native window manager in order to perform actions against the 2D application
+  associated with this object. 
+  </p>
+  
+  <p>
+  <code>NativeWindowLookAndFeel</code> defines native windows look and feel.
+  At this level, typically window decoration is constructed.
+  The current implementation includes 
+  <code>GlassyNativeWindowLookAndFeel</code> in the 
+  <code>lg3d.scenemanager.utils.decoration</code> package as an example.
+  </p>
+  
+  <p>
+  <code>NativeWindowObject</code> and <code>TiledNativeWindowImage</code>
+  are introduced to hide all the complexy related to native window caputure
+  support.  Texture is used for presenting captured 2D window surface in the
+  3D space, but it has size limitation which is sometimes smaller than 
+  maximum 2D window size.  In order to deal with large 2D window caputre,
+  we use composite multiple textures created from multiple 
+  <code>ImageComponent2D</code>s.  The details are hidden under this and
+  the <code>TiledNativeWindowImage</code> class.
+  </p>
+  
+  <p>
+  The following diagram illustrates relationship among the major classes.
+  </p>
+  
+  <pre>
+     Scene         X11WindowManager            A |  Inheritance 
+    Manager     X11Client       |              | V 
+       |            |           |              
+       |            V           Y              ^ |  Reference   
+       Y      NativeWindow  NativeWindow       | Y 
+    Frame3D       Control    Monitor          
+       A            ^           A             
+       |            |           |
+       +-----NativeWindow3D-----+
+                    ^                   LgBranchGroup
+                    |                         A
+                    Y                         |
+          NativeWindowLookAndFeel --> NativeWindowObject
+                    A                         |
+                    |                         Y
+            GlassyNativeWindow         NativeWindowPane
+               LookAndFeel                    |
+                                              Y
+                                    TiledNativeWindowImage
+                                              |
+                                              Y
+                                      TiledNativeWindow
+                                         ImageLoader                    
+  </pre>
+  
+  </body>
+</html>

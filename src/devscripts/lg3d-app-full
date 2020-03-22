@@ -1,0 +1,10 @@
+#!/bin/bash
+#
+# lg3d-app-full [<options>]
+#
+# Run the LG desktop in the no-border-full-screen mode. This
+# is the same as lg3d-app -f. The reason to have a separate script
+# is that gdm doesn't like arguments on its EXEC line.
+
+SCRIPTDIR=`dirname $0`
+. ${SCRIPTDIR}/lg3d-app -f $*

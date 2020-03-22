@@ -1,0 +1,13 @@
+
+This etc/lg3d/skel/ directory is intended to be a place to store the default
+configuration info for initializing the LG3D environment at the first run.
+
+- prefs.xml -- this file contains the default LG3D preferences values.
+  At the very first time startup of LG3D, those preferences are loaded 
+  and stored by the JVM.  
+
+  Once the preferences get loaded, this prefs.xml file won't be loaded
+  again.  In order to force to do so, you can manually do like
+  "rm -r ~/.java/.userPrefs/org/jdesktop/lg3d"
+  TODO: we should provide some tool to manage the preferences.
+

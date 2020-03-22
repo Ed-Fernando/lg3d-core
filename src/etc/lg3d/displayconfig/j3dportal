@@ -1,0 +1,99 @@
+//
+// Config.txt
+// Configuration file for triple projector, triple screen system
+//
+// The projectors in this portal are actually turned on their side which
+// leads to some odd looking matrices.
+//
+
+(NewScreen              left	0)
+(NewScreen		center  1)
+(NewScreen              right	2)
+
+
+// Physical screen size necessary for head tracking, or to specify overlap
+// in the event that one of the optional PixelOverlap or the PhysicalFOV 
+// techniques to specify the overlap was not used.  Otherwise, physical screen
+// size is optional.
+
+(ScreenAttribute        left    PhysicalScreenWidth     2.480)
+(ScreenAttribute        left    PhysicalScreenHeight    1.705)
+
+(ScreenAttribute        center  PhysicalScreenWidth     2.485)
+(ScreenAttribute        center  PhysicalScreenHeight    1.745)
+
+(ScreenAttribute        right   PhysicalScreenWidth     2.480)
+(ScreenAttribute        right   PhysicalScreenHeight    1.775)
+
+(ScreenAttribute	left	WindowSize NoBorderFullScreen)
+(ScreenAttribute	center	WindowSize NoBorderFullScreen)
+(ScreenAttribute	right	WindowSize NoBorderFullScreen)
+
+
+(NewPhysicalEnvironment        VirtualPortal)
+(PhysicalEnvironmentAttribute   VirtualPortal
+                                CoexistenceToTrackerBase
+                                ((-1.0  0.0  0.0  0.0)
+                                 ( 0.0  0.0 -1.0  0.0)
+                                 ( 0.0 -1.0  0.0  0.5)))
+
+
+
+(ScreenAttribute left   TrackerBaseToImagePlate
+                        (( 0.0  0.0 -1.0  2.230)
+                         ( 0.0 -1.0  0.0  1.340)
+                         (-1.0  0.0  0.0  0.885)))
+
+(ScreenAttribute center TrackerBaseToImagePlate
+                        (( 0.0  0.0  1.0  0.248)
+                         (-1.0  0.0  0.0  0.885)
+                         ( 0.0 -1.0  0.0  1.340)))
+
+(ScreenAttribute right  TrackerBaseToImagePlate
+                        (( 0.0  0.0  1.0  0.2488)
+                         ( 0.0 -1.0  0.0  1.340)
+                         ( 1.0  0.0  0.0  0.860)))
+
+
+
+(NewPhysicalBody        LabRat)       
+(PhysicalBodyAttribute  LabRat   StereoEyeSeparation     .07)
+
+
+
+(NewView        view0)
+
+(ViewAttribute  view0   Screen                  left)
+(ViewAttribute  view0   Screen                  center)
+(ViewAttribute  view0   Screen                  right)
+
+(ViewAttribute	view0	PhysicalBody		LabRat)
+(ViewAttribute	view0	PhysicalEnvironment	VirtualPortal)
+
+
+//
+// User position in the display environment.
+//
+
+(ViewAttribute  view0   CenterEyeInCoexistence	(0.0 0.0 0.0))
+
+(ViewAttribute  view0   ScreenScalePolicy       SCALE_SCREEN_SIZE)
+//(ViewAttribute        view0   ScreenScalePolicy       SCALE_EXPLICIT)
+//(ViewAttribute        view0   ScreenScale     0.30)
+
+
+(ViewAttribute	view0	WindowResizePolicy	VIRTUAL_WORLD)
+(ViewAttribute	view0	WindowMovementPolicy	VIRTUAL_WORLD)
+
+
+(ViewAttribute	view0	StereoEnable		False)
+
+
+//
+// The clip distance attribute is usually overridden by the application.
+//
+
+(ViewAttribute        view0   FrontClipDistance       0.1)
+(ViewAttribute        view0   BackClipDistance        100.0)
+
+

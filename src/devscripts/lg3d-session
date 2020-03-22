@@ -1,0 +1,200 @@
+#!/bin/bash -f
+#
+# lg3d-session [ -xs | -ds ] [-D<name>=<value>]
+#
+# Start the LG3D desktop environment.
+#
+# Options:
+#
+#    -xs    	Start the X Server
+#    -ds    	Start the Display Server
+#    -D<name>=<value> define a JVM property to passed to the display server.
+#
+# A single option may appear on the command line. This option
+# indicates a component of the desktop environment that should
+# be started. Only that component will be started. Components
+# that are not started by this script are assumed to be started
+# manually (in their proper order).
+#
+# Default behavior: if no option are provided, all components
+# are started.
+usage()
+{
+    echo
+    echo "lg3d-session [<options>]"
+    echo "    -xs|-ds          : Start only one of display server or the X server"
+    echo "    -D<name>=<value> : define JVM property for the display server"
+    echo "    -X<java-option>  : pass not-standard X option to java"
+    echo "    -h               : print this help"
+    echo
+
+    exit $1
+}
+
+START_XS=1
+START_DS=1
+
+# Set this to run gdb on the X server
+DEBUG_XS=0
+
+# Additional JVM options passed to the display server
+DS_JVM_OPTS=
+
+while [ $# -gt 0 ]
+do
+    case "$1" in
+    -xs)    START_XS=1  ; START_DS=0		;;
+    -ds)    START_XS=0	; START_DS=1	    	;;
+    -dxs)   DEBUG_XS=1				;;
+    -D*)    DS_JVM_OPTS="${DS_JVM_OPTS} $1"	;;
+    -X*)    DS_JVM_OPTS="${DS_JVM_OPTS} $1"	;;
+    -agen*) DS_JVM_OPTS="${DS_JVM_OPTS} $1"	;;
+    -yjp)   DS_JVM_OPTS="${DS_JVM_OPTS} -agentlib:yjpagent"		;;
+    -jc)    DS_JVM_OPTS="${DS_JVM_OPTS} -Dcom.sun.management.jmxremote"	;;
+    -h*)    usage 0				;;
+    *)      usage 1				;;
+    esac
+
+    shift
+done
+
+# TODO: currently, this assumes that the users X display is always :0.
+# It would be nice to be more flexible than this.
+LG_DISPLAY=":0"
+
+SCRIPTDIR=`dirname $0`
+PROG="${0#${SCRIPTDIR}/}"
+
+. ${SCRIPTDIR}/setup
+
+# Check if Composite is enabled in Nvidia driver
+if [ "${OS}" == "linux" ]; then
+  XORGCONF="/etc/X11/xorg.conf"
+  NVIDIADRIVER=`/sbin/lsmod | grep nvidia`
+  if [ "${NVIDIADRIVER}" != "" ]; then
+    GLXCOMPOSITE=`grep -m 1 AllowGLXWithComposite ${XORGCONF} | awk '{ print $3 }' | awk -F \" '{ print $2 }'`
+    if [ "${GLXCOMPOSITE}" != "true" ]; then
+      echo "Composite XOrg support not enabled"
+      echo "Please see https://lg3d-core.dev.java.net/nvidia-driver-install-tips.html#ALLOWGLXWITHCOMPOSITE"
+#     exit
+    fi
+  fi
+fi
+
+# Get the system Xorg module path and prepend the lg3d-x11 modulepath
+# in order to make sure that the lg3d modules are found first
+XORGMODULEPATH=`${SCRIPTDIR}/get-xorg-modulepath`
+MODULEPATH="${LGX11HOME}/exports/lib/modules,$XORGMODULEPATH"
+
+if [ -e /usr/share/X11/rgb.txt ]; then
+    # Base system is Xorg 7.0 (e.g. FC5, Dapper)
+    COARG="-co /usr/share/X11/rgb"
+else
+    # Base system is pre-Xorg 7.0 (e.g. SUSE 9.1, FC4, Breezy)
+    COARG=""
+fi
+
+ARCH="i386"
+XS_EXEC="Xorg"
+XS_ARGS="+extension Composite -modulepath $MODULEPATH $COARG"
+XSERVER="${LGX11HOME}/programs/Xserver/${XS_EXEC}"
+XS_CMD="${XSERVER} ${XS_ARGS}"
+
+if [ ${LD_LIBRARY_PATH:-0} == 0 ]; then
+  export LD_LIBRARY_PATH=""
+fi
+
+# Start the X server
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/bin:${LGX11HOME}/exports/lib"
+if [ "$START_XS" == "1" ]; then
+  if [ "$DEBUG_XS" == "1" ]; then
+    if [ "$OS" == "linux" ]; then
+      gdb $XSERVER
+    else
+      dbx $XSERVER
+    fi
+  else
+    if [ ! -e $XSERVER ]; then
+      echo "ERROR:"
+      echo "Cannot find Xserver executable: $XSERVER."
+      echo "Either the environment variable LGX11HOME is not set properly"
+      echo "or lg3d-core was not built properly with X11 support."
+      echo "For instructions on how to build lg3d-core with X11 support"
+      echo "refer to the Project Looking Glass Developers Guide."
+      exit 1
+    fi
+    export DISPLAY="$LG_DISPLAY"
+    ${SCRIPTDIR}/check_no_x
+    if [ $? != 0 ]; then
+	    echo "ERROR:"
+      echo "There is an X11 Server already running for DISPLAY=$LG_DISPLAY."
+	    echo "You must first bring down the X11 Server running this script."
+	    echo "Refer to the instructions in the following URL:"
+      echo "https://lg3d-core.dev.java.net/lg3d-getting-started.html"
+      exit 1
+    fi
+    ($XS_CMD & sleep 3)
+  fi
+fi
+
+# Start the Display Server
+# TODO: need to change the name of ds root class
+if [ "$START_DS" == "1" ]; then
+  if [ "$OS" == "solaris" ]; then
+    export PATH="/usr/openwin/bin:$PATH"
+  fi
+
+  export DISPLAY="$LG_DISPLAY"
+  export LD_LIBRARY_PATH="${LGX11HOME}/exports/lib:${LD_LIBRARY_PATH}:${FWSLIB}"
+
+  # Start the Display Server
+
+  export DISP_CONFIG="-Dlg.displayconfigurl=file://${ETCDIR}/lg3d/displayconfig/j3d1x1-nbfs"
+  # export DISP_CONFIG="-Dlg.displayconfigurl=file://${SCRIPTDIR}/../etc/lg3d/displayconfig/j3d1x2-flat"
+
+  # Uncomment this to run in half screen mode (for debug)
+  # export DISP_CONFIG="-Dlg.displayconfigurl=file://${SCRIPTDIR}/../etc/lg3d/displayconfig/j3d1x1-halfscr"
+
+  # This is debug code to ensure that the proper OpenGL library is being used
+  # ldd /usr/X11R6/bin/glxgears
+  # /usr/X11R6/bin/glxinfo
+
+  # TODO: currently, this assumes that the session's X display is always :0.
+  # It would be nice to be more flexible than this.
+  DISPLAY_PROPERTY="-Dlg.lgserverdisplay=:0"
+
+  export LG_SETTINGS="${LG_SETTINGS} -Dlg.fws.mode=session ${DISPLAY_PROPERTY} ${TOOLKIT}"
+
+  INT_REQUIRED=`${SCRIPTDIR}/lg3d-x11-interface-required`
+  export LG_SETTINGS="${LG_SETTINGS} -Dlg.fws.x11.interfaceRequired=${INT_REQUIRED} ${DS_JVM_OPTS}"
+
+  # comment out the following until we start uring RMI again
+  # pkill -f "rmiregistry ${RMI_PORT}"
+  # sleep 1
+  # rmiregistry ${RMI_PORT}&
+
+  JAVACMD="${JAVA_HOME}/bin/java $JVMARGS -Xbootclasspath/a:${BOOTCLASSPATH} ${PROFILE_FLAGS} ${DEBUG_FLAGS} ${CONFIGDIR} -Dj3d.sortShape3DBounds=true -Dlg.configurl=${LGCONFIG} ${DISP_CONFIG} ${LG_SETTINGS} org.jdesktop.lg3d.displayserver.Main"
+
+  echo "LG3D Dir         : ${LGDIR}"           >> ${LOGFILE}
+  echo "LGCONFIG         : ${LGCONFIG}"        >> ${LOGFILE}
+  echo "LG_SETTINGS      : ${LG_SETTINGS}"     >> ${LOGFILE}
+  echo "LGX11HOME        : ${LGX11HOME}"       >> ${LOGFILE}
+  if [ -f ${LGX11HOME}/VERSION ] ; then
+    echo "X Server Version : `cat ${LGX11HOME}/VERSION`" >> ${LOGFILE}
+  else
+    echo "X Server Version : NOT AVAILABLE!"     >> ${LOGFILE}
+  fi
+  echo "JAVA_HOME        : ${JAVA_HOME}"       >> ${LOGFILE}
+  echo "CLASSPATH        : ${CLASSPATH}"       >> ${LOGFILE}
+  echo "PATH             : ${PATH}"            >> ${LOGFILE}
+  echo "LD_LIBRARY_PATH  : ${LD_LIBRARY_PATH}" >> ${LOGFILE}
+  echo "JAVACMD          : ${JAVACMD}"         >> ${LOGFILE}
+
+  (${JAVACMD} &) | tee -a ${LOGFILE} | grep "SEVERE\|WARNING\|ClassVersionError"
+
+  # We only reach here when the displayserver exits.
+  # A this time, bring down the X server, if necessary
+  if [ "$START_XS" == "1" ]; then
+    pkill $XS_EXEC &> /dev/null
+  fi
+fi

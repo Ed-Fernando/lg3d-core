@@ -1,0 +1,30 @@
+#!/bin/bash
+#
+# check_no_x
+#
+
+TMP=/tmp/check_no_x.$$
+
+if [ "$OS" = "linux" ]; then
+  if [ -x /usr/bin/xdpyinfo ] ; then
+      /usr/bin/xdpyinfo > $TMP 2>&1
+  else
+      /usr/bin/X11/xdpyinfo > $TMP 2>&1
+  fi
+else
+  if [ "$OS" = "solaris" ]; then
+    /usr/openwin/bin/xdpyinfo > $TMP 2>&1
+  else
+    echo "Invalid OS type: $OS"
+  fi
+fi
+
+UNABLE=`cat $TMP | fgrep "unable to open display"`
+
+/bin/rm -f $TMP
+
+if [ "$UNABLE" != "" ]; then
+  exit 0
+fi
+
+exit 1

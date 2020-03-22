@@ -1,0 +1,25 @@
+Scripts for running tests, without requiring the jar to be built.
+
+lg3d-session : starts the full Project Looking Glass session including
+               the X server. Client applications in other processes
+               can connect to the server. X11 applications will be
+               'captured' and displayed fully integrated in the 3D
+               environment.
+
+lg3d-dev     : starts the Project Looking Glass environment in a window
+               on an existing desktop. No support for X11 application is
+               provided within the Looking Glass environment in this mode.
+               The script can be given a parameter which be interpreted as
+               name of the lgconfig file in etc/lg3d, if no parameter is
+               supplied lgconfig_1p_nox.xml is used.
+
+               Looking Glass aware applications in other processes can
+               still connect to the server.
+
+HelloUniverse : A sample script that combines an application and the
+               Looking Glass environment in a single process. Use this
+               mode for app development, scene manager development or
+               low level platform testing. The environment is again run
+               in a window on an existing desktop.
+
+

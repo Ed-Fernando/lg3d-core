@@ -1,0 +1,322 @@
+##
+## NOTE: this is the version that adds lg3d-session to gdm.conf.
+## This configuration is not yet supported.
+##
+
+#!/usr/bin/perl -w
+# 2005-02-12 Erwann Chenede - <erwann.chenede@sun.com>
+#
+# This script adds a new session for LG to the existing gdm configuraion
+#
+sub check_root {
+
+  $result = `id -u`;
+  if ($result != 0)
+  {
+    print "Only root should run this program. exiting\n";
+    exit (1);
+  }
+}
+  
+
+
+sub add_lg_xserver_conf_to_gdm_conf {
+  if (-x /bin/arch)
+  {
+    $lg_arch = `/bin/arch`;
+  }
+  else
+  {
+	$lg_arch = `uname -m`;
+  }
+  $lg_arch =~ s/\n//;
+  my ($lg_distrib_path, @file) = @_;
+  foreach $line (@file)
+  {
+    if (!($line =~ /^#/)) {
+      if ($line =~ /0=/) { # add LG server
+	@new_file = (@new_file, "0=lg\n");
+#	@new_file = (@new_file, "1=Standard\n");
+      }
+      if ($line =~ /\[server-Standard\]/) {
+	@new_file = (@new_file, "[server-lg]\n","name=Xserver used for Looking Glass 3D Desktop\n");
+	$command= "command=$lg_distrib_path/ext/lg3d-x11/linux/$lg_arch/lg3d-x11/programs/Xserver/Xorg +extension Composite -modulepath ${LGX11HOME}/exports/lib/modules,`$lg_distrib_path/src/devscripts/get-xorg-modulepath`\n";
+	@new_file = (@new_file, $command);
+	@new_file = (@new_file, "flexible=true\n");
+      }
+    }
+    
+    if (!($line =~ /^0=/) && !($line =~ /DisallowTCP/) ) { # skip 0=Standard as we moved it to 1=Standard, also skip DisallowTCP as we add it below
+      @new_file = (@new_file, $line);
+    }
+
+    if ($line =~ /DisallowTCP/) {
+        @new_file = (@new_file, "DisallowTCP=false\n");
+    }
+  }
+  return @new_file;
+}
+
+sub get_gdm_desktop_files_location {
+ if ($usedpkg eq "true") {
+   @list = `dpkg -L gdm`;
+ } else {
+   @list = `rpm -ql gdm`;
+ }
+   foreach $_ (@list)
+   {
+    if (/xsessions/)
+    {
+      $dirname = $_;
+      chomp $dirname;
+      $dirname =~ s/xsessions.*/xsessions/;
+      return $dirname;
+    }
+   }
+ print ("Error couldn't retrieve desktop file location. exiting\n");
+ exit (1);
+}
+
+sub get_gdm_conf_filename {
+ if ($usedpkg eq "true") {
+   @list = (`dpkg -L gdm`);
+ } else {
+   @list = `rpm -ql gdm`;
+ }
+ foreach $_ (@list) 
+  {
+    if (/\/gdm.conf/)
+    {
+      $filename = $_;
+      chomp $filename;
+      return $filename;
+    }
+  }
+  print ("Error couldn't retrieve gdm.conf location. exiting\n");
+  exit (1);
+}
+
+sub get_gdm_conf_file {
+  
+  my ($gdm_filename) = @_;
+
+  open (GDMCONF,$gdm_filename);
+  while (<GDMCONF>)
+  {
+    @a = (@a,$_);
+  }
+  close GDMCONF;
+  return @a;
+}
+
+sub check_gdm_installed {
+
+  print ("Checking if gdm is installed on the system....");
+ if ($usedpkg eq "true") {
+   $result=`dpkg --get-selections gdm`;
+ } else {
+   $result=`rpm -q gdm`;
+ }
+
+  if ($result =~ /package/)
+  {
+    print ("No\n");
+    print ("gdm doesn't seem to be installed on your system. exiting.\n");
+    exit (1);
+  }
+  else
+  {
+    print ("Yes\n");
+  }
+}
+
+sub gdm_conf_sanity_check {
+
+  my (@file) = @_;
+  
+  # check is [servers] section exist
+  $servers_section_found = 0;
+  $multiple_servers_defined = 0;
+  $looking_glass = 0;
+  foreach $line (@file)
+  {
+    if ($line =~ /\[servers\]/) {
+    $servers_section_found = 1;
+    }
+    if ($line =~ /^1=/) {
+    $multiple_servers_defined = 1;
+    }
+    if ($line =~ /Looking Glass/) {
+    $looking_glass = 1;
+    }
+  }
+
+  if ($servers_section_found == 0)
+  {
+    print ("gdm.conf doesn't contain a [servers] section, cannot edit file. exiting.\n");
+    exit (1);
+  }
+
+  if ($looking_glass == 1) {
+    print ("Looking Glass seems to be already defined in gdm.conf, cannot edit file. exiting.\n");
+    exit (1);
+  }
+
+  if ($multiple_servers_defined == 1)
+  {
+    print ("gdm.conf already contains multiple Xserver definition, cannot edit file. exiting\n");
+    exit (1);
+  }
+}
+
+sub get_lg_distrib_path ()
+{
+#  $current_path=`pwd`;
+#  chomp $current_path;
+#  # remove the two last dir as this script is meant to be executed in src/devscripts
+#  $current_path=~s/\/src\/devscripts//;
+#  
+#  print "please input the current location of the lg distribution \n(default=$current_path): ";
+#  $new_path=<STDIN>;
+#  chomp $new_path;
+#  if (!$new_path)  {
+#    print "using the suggested one : $current_path\n";
+#    $new_path = $current_path;
+#  } else {
+#    print "using $new_path\n";
+#  }
+#  return $new_path;
+   return "/usr/share/lg3d";
+}
+
+sub get_lg_install_path ()
+{
+#  $suggested_path="/opt/lg3d-core";
+#  print "The LG distribution needs to be copied by root to a location \nthat all users can access it.\n";
+#  print "Please input the desired installation location of the lg distribution \n(suggested=$suggested_path): ";
+#  $new_path=<STDIN>;
+#  chomp $new_path;
+#  if (!$new_path)  {
+#    print "using the suggested one : $suggested_path\n";
+#    $new_path = $suggested_path;
+#  } else {
+#    print "using $new_path\n";
+#  }
+#  return $new_path;
+   return "/usr/share/lg3d";
+}
+
+sub backup_gdm_conf ()
+{
+  $new_gdm_filename = $gdm_filename;
+  $new_gdm_filename =~ s/gdm.conf/gdm.conf.before-LG/;
+  rename ($gdm_filename, $new_gdm_filename) || die "couldn't rename $gdm_filename as $new_gdm_filename: $!";
+}
+
+sub write_new_gdm_conf 
+{
+  my ($gdm_filename, @file) = @_;
+
+  open (NEWGDMCONF, ">$gdm_filename") || die "couldnt' open $gdm_filename :$!";
+  
+  foreach $line (@file)
+  {
+    print NEWGDMCONF $line;
+  }
+  
+  close (NEWGDMCONF);
+}
+
+#sub copy_lg_dir 
+#{
+#  my ($source, $dest) = @_;
+#  print  "copying $source directory to $dest\n";
+#  $result = system("cp -r $source $dest");
+#  if ($result != 0)
+#  {
+#    print "error trying to copy looking glass distribution in $lg_distrib_path to $lg_install_path.exiting\n";
+#    exit (1);
+#  }
+#}
+  
+sub create_lg_desktop_file 
+{
+  my ($desktopdir, $lg_path) = @_;
+  $filename = "$desktopdir/lg.desktop";
+  if (-e $filename)
+  {
+    print "Session file $filename already exist. exiting.\n";
+    exit 1;
+  }
+  
+  print "creating $filename session file\n";
+  
+  open (LGDESKTOP,">$filename") || die "couldn't create $filename :$!";
+
+  print LGDESKTOP "[Desktop Entry]\n";
+  print LGDESKTOP "Encoding=UTF-8\n";
+  print LGDESKTOP "Name=Looking Glass\n";
+  print LGDESKTOP "Comment=this session logs you into the Looking Glass 3D desktop\n";
+  print LGDESKTOP "Exec=$lg_path/bin/lg3d-gdm-session\n";
+  print LGDESKTOP "TryExec=$lg_path/bin/lg3d-gdm-session\n";
+  print LGDESKTOP "Icon=\n";
+  print LGDESKTOP "Type=Application\n";
+
+  close LGDESKTOP;
+
+  $result = system ("chmod 755 $filename $lg_path/bin/lg3d-gdm-session");
+  if ($result != 0)
+  {
+    print "couldn't set the right file permissions to $filename $lg_path/bin/lg3d-session. exiting\n";
+    exit 1;
+  }
+}
+
+
+# Main
+
+print "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n";
+print " This script adds Looking Glass as gdm session\n";
+print "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n";
+
+$usedpkg = "true";
+
+check_root ();
+
+check_gdm_installed ();
+
+$gdm_filename = get_gdm_conf_filename ();
+
+@gdm_conf = get_gdm_conf_file ($gdm_filename);
+
+gdm_conf_sanity_check (@gdm_conf);
+
+$lg_install_path = get_lg_install_path ();
+
+#$lg_distrib_path = get_lg_distrib_path ();
+
+@new_gdm_conf = add_lg_xserver_conf_to_gdm_conf ($lg_install_path, @gdm_conf);
+
+backup_gdm_conf ();
+
+write_new_gdm_conf ($gdm_filename, @new_gdm_conf);
+
+#copy_lg_dir (get_lg_distrib_path(), $lg_install_path);
+
+$gdm_session_desktop_file_location = get_gdm_desktop_files_location ();
+create_lg_desktop_file ($gdm_session_desktop_file_location, $lg_install_path);
+
+print "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n";
+print "A Looking Glass session as been added to your current gdm setup\n";
+print "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n";
+
+#print "To login into a normal session (e.g. gnome) you will need to press\n";
+#print "ctrl+alt+F8 or ctrl+alt+F9 to view the login manager with the normal\n";
+#print "xserver.\n";
+  
+#print "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n";
+print "\nYou need to restart gdm to see this new session (either logout or\n";
+print "run gdm-restart)\n";
+print "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n";
+#print "you can remove these changes by running the remove-lg-session-from-gdm\n";
+#print "script.\n";

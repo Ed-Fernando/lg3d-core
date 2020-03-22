@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE preferences SYSTEM "http://java.sun.com/dtd/preferences.dtd">
+<!--
+    The default preferences initialization file for LG3D
+-->
+<preferences EXTERNAL_XML_VERSION="1.0">
+  <root type="user">
+    <map/>
+    <node name="org">
+      <map/>
+      <node name="jdesktop">
+        <map/>
+        <node name="lg3d">
+          <map/>
+          
+          <node name="scenemanager"><!-- user:/org/jdesktop/lg3d/scenemanager -->
+            <!-- SceneManager settings -->
+            <map>
+              <!--<entry key="class" value="org.jdesktop.lg3d.scenemanager.glassy.GlassySceneManager"/>-->
+              <!--<entry key="class" value="org.jdesktop.lg3d.scenemanager.advanced.AdvancedSceneManager"/>-->
+              <!--<entry key="globallights" value="org.jdesktop.lg3d.scenemanager.utils.globallights.StandardGlobalLights"/>-->
+            </map>
+            
+            <node name="plugins"><!-- user:/org/jdesktop/lg3d/scenemanager/pligins -->
+              <!-- SceneManagerPlugins settings -->
+              <map>
+                <!--<entry key="GlassyTaskbar" value="org.jdesktop.lg3d.scenemanager.utils.taskbar.GlassyTaskbar"/>-->
+                <!--<entry key="AdvancedGlassyTaskbar" value="org.jdesktop.lg3d.scenemanager.utils.taskbar.AdvancedGlassyTaskbar"/>-->
+                <!--
+                <entry key="StartMenu"     value="org.jdesktop.lg3d.scenemanager.utils.startmenu.StartMenu"/>
+                <entry key="BgManager"     value="org.jdesktop.lg3d.apps.bgmanager.BgManagerIcon"/>
+                <entry key="Terminator"    value="org.jdesktop.lg3d.apps.terminator.Terminator"/>
+                -->
+              </map>
+            </node><!-- end of node name="plugin"-->
+            
+            <node name="cursors"><!-- user:/org/jdesktop/lg3d/scenemanager/cursors -->
+              <!-- Default system cursors settings -->
+              <map>
+                <!--
+                <entry key="NULL_CURSOR"       value="org.jdesktop.lg3d.utils.cursor.NullCursor"/>
+                <entry key="DEFAULT_CURSOR"    value="org.jdesktop.lg3d.utils.cursor.WigglingCursor"/>
+                <entry key="MEDIUM_CURSOR"     value="org.jdesktop.lg3d.utils.cursor.WigglingCursor, 0.0075"/>
+                <entry key="SMALL_CURSOR"      value="org.jdesktop.lg3d.utils.cursor.WigglingCursor, 0.0050"/>
+                <entry key="MOVE_CURSOR"       value="org.jdesktop.lg3d.utils.cursor.MoveCursor"/>
+                <entry key="SMALL_MOVE_CURSOR" value="org.jdesktop.lg3d.utils.cursor.MoveCursor, 0.0075"/>
+                <entry key="E_RESIZE_CURSOR"   value="org.jdesktop.lg3d.utils.cursor.ResizeCursor"/>
+                <entry key="NE_RESIZE_CURSOR"  value="org.jdesktop.lg3d.utils.cursor.ResizeCursor"/>
+                <entry key="NW_RESIZE_CURSOR"  value="org.jdesktop.lg3d.utils.cursor.ResizeCursor"/>
+                <entry key="N_RESIZE_CURSOR"   value="org.jdesktop.lg3d.utils.cursor.ResizeCursor"/>
+                <entry key="SE_RESIZE_CURSOR"  value="org.jdesktop.lg3d.utils.cursor.ResizeCursor"/>
+                <entry key="SW_RESIZE_CURSOR"  value="org.jdesktop.lg3d.utils.cursor.ResizeCursor"/>
+                <entry key="S_RESIZE_CURSOR"   value="org.jdesktop.lg3d.utils.cursor.ResizeCursor"/>
+                <entry key="W_RESIZE_CURSOR"   value="org.jdesktop.lg3d.utils.cursor.ResizeCursor"/>
+                -->
+              </map>
+            </node><!-- end of node name="cursor"-->
+            
+            <node name="utils">
+              <map/>
+              <node name="startmenu">
+                <map>
+                  <!-- user:/org/jdesktop/lg3d/scenemanager/utils/startmenu -->
+                  <!--<entry key="model.class" value="org.jdesktop.lg3d.scenemanager.utils.startmenu.model.panel.PanelStartMenuModel"/>-->
+                  <!--<entry key="model.class" value="org.jdesktop.lg3d.scenemanager.utils.startmenu.model.disc.DiscStartMenuModel"/>-->
+                  <!--<entry key="model.class" value="org.jdesktop.lg3d.scenemanager.utils.startmenu.model.orbit.OrbitStartMenuModel"/>--> 
+                </map>
+              </node><!-- end of node name="startmenu"-->
+            </node><!-- end of node name="utils"-->
+            
+          </node><!-- end of node name="scenemanager"-->
+
+          <node name="displayserver">
+            <map/>
+            <node name="nativewindow">
+              <map/>
+              <node name="x11">
+                <map/>
+                <node name="win-assoc"><!-- user:/org/jdesktop/lg3d/displayserver/nativewindow/x11/win-assoc -->
+                  <!-- Default user configuration for window-on-the-backside feature -->
+                  <map/>
+                  <!-- 
+                    List of a set of app info (6 entries per app).
+                    - parent-res-cls       - parent app's resource class in X
+                    - parent-res-name      - parent app's resource name in X
+                    - parent-title-pattern - regular expression pattern to match with the window title
+                  -->
+                  
+                  <node name="Firefox-bin">
+                    <map>
+                      <entry key="parent-res-cls"       value="Firefox-bin"/>
+                      <entry key="parent-res-name"      value="Gecko"/>
+                      <entry key="parent-title-pattern" value="^.* Firefox$"/>   
+                      <entry key="child-res-cls"        value="Firefox-bin"/>
+                      <entry key="child-res-name"       value="Gecko"/>
+                      <entry key="child-title-pattern"  value="^(Firefox |)Preferences$"/>
+                    </map>
+                  </node>
+                  
+                  <node name="Gnome-terminal">
+                    <map>
+                      <entry key="parent-res-cls"       value="Gnome-terminal"/>
+                      <entry key="parent-res-name"      value="gnome-terminal"/>
+                      <entry key="parent-title-pattern" value="^.*$"/> 
+                      <entry key="child-res-cls"        value="Gnome-terminal"/>
+                      <entry key="child-res-name"       value="gnome-terminal"/>
+                      <entry key="child-title-pattern"  value="^Profiles$|^Keyboard Shortcuts$|^Editing [Pp]rofile .*$"/>
+                    </map>
+                  </node>
+                </node>
+                
+              </node><!-- end of node name="x11"-->
+            </node><!-- end of node name="nativewindow"-->
+          </node><!-- end of node name="displayserver"-->
+        </node><!-- end of node name="lg3d"-->
+      </node>
+    </node>
+  </root>
+</preferences>

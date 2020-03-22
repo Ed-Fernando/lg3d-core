@@ -1,0 +1,54 @@
+#!/bin/bash
+#
+# lg3d-app-x11
+#
+# Run the LG Xvfb to allow you running lg3d-app from ant
+
+# TODO: currently, this assumes that the users X display is always :0.
+# It would be nice to be more flexible than this.
+USER_DISPLAY=":0"
+LG_DISPLAY=":1"
+
+SCRIPTDIR=`dirname $0`
+. ${SCRIPTDIR}/setup
+
+# Set this to run gdb on the X server
+DEBUG_XS=0
+
+XS_EXEC="Xvfb"
+# TODO: 16 bit depth support
+XS_ARGS="$LG_DISPLAY -screen 0 1280x1024x24 +extension Composite +extension LGE"
+XSERVER="${LGX11HOME}/programs/Xserver/$XS_EXEC"
+XS_CMD="$XSERVER $XS_ARGS"
+
+# Start the X server
+pkill $XS_EXEC
+# TODO: why is this necessary?
+unset XAUTHORITY
+if [ $DEBUG_XS == 1 ]; then
+	gdb $XSERVER
+else
+	if [ ! -e $XSERVER ]; then
+		echo "ERROR:"
+		echo "Cannot find Xserver executable: $xserver."
+		echo "Either the environment variable LGX11HOME is not set properly"
+		echo "or lg3d-core was not built properly with X11 support."
+		echo "For instructions on how to build lg3d-core with X11 support"
+		echo "refer to the Project Looking Glass Developers Guide."
+		exit 1
+  fi
+	export DISPLAY="$LG_DISPLAY"
+  ${SCRIPTDIR}/check_no_x
+  if [ $? != 0 ]; then
+		echo "ERROR:"
+		echo "There is an X11 Server already running for DISPLAY=$LG_DISPLAY."
+		echo "You must first bring down the X11 Server running this script."
+		echo "Refer to the instructions in the following URL:"
+		echo "https://lg3d-core.dev.java.net/lg3d-getting-started.html"
+		exit 1
+	fi
+	echo "Xvfb started..."
+	sleep 5 && xhost + &
+	echo $XS_CMD
+	$XS_CMD
+fi

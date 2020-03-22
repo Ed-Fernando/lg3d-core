@@ -1,0 +1,92 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+  <head>
+    <title></title>
+  </head>
+  <body>
+  The LG utility classes.
+  <p>
+  Efforts have been paid to provide modular and reusable library.
+  At this moment, the main focus of development is on rich visual feedback
+  and features to support it, including utilities for event capture and
+  visual actions.
+  The following diagram shows relationship among classes in the
+  subpackages related to visual feedback:
+  </p>
+  
+  <pre>
+  LgEvent
+     |
+     V
+  eventadapter        actionadapter   action     behavior           smoother
+  LgEventListener -> [Action*     ]-> Action* -> ActionBehavior <-> TransitionSmoother
+                                                      |
+                                                      V
+                                                 Component3D (typically)
+  </pre>
+  
+  <p>
+  Classes under the eventadapter subpackage implement the LgEventListener 
+  interface and takes a class that implements one or more of the Action* 
+  interface.  These are receiver of events and invokes performAction() 
+  methods with pre-digested info.
+  </p>
+  
+  <p>
+  Classes under the actionadapter subpackage implement the Action* interface
+  and takes a class that implements one or more of the Action* interface.
+  These act as converter among action types.
+  </p>
+  
+  <p>
+  Classes under the action subpackage implement one of more Action* interfaces.
+  These receives pre-digested info typically from an eventadapter class
+  via performAction() method invocation, and typically perform visual action. 
+  </p>
+  
+  <p>
+  Classes under the behavior subpackage extend the ActionBehavior abstract class
+  and implement basic behaviors.  All the behaviors are executed on the server
+  side.
+  </p>
+  
+  <p>
+  Classes under the smoother subpackage implement either FloatTransitionSmoother
+  or Vector3fTransitionSmoother.  These are designed to provide reusable 
+  natural motion for action implementation.
+  </p>
+  
+  <p>
+  There are a few more subpackages under the utils pacakge.
+  </p>
+  
+  <p>
+  Classes under the eventaction subpackage typically receive event and performs
+  action.  These are something reusable as a whole, thus haven't been componentized.
+  </p>
+  
+  <p>
+  Classes under the shape subpackage typically extend the Shape3D class and 
+  provides reusable shapes.
+  </p>
+  
+  <p>
+  Classes under the cursor subpackage extend the Cursor3D class and provides
+  reusable 3D cursors.
+  </p>
+  
+  <p>
+  Classes under the component subpackage extend either the Component3D or 
+  Container3D class and implements reusable 3D components.  This area is still
+  very rough.  Need more design work. 
+  </p>
+  
+  <p>
+  Classes under the layoutmanager subpackage implement the LayoutManager3D
+  interface and provide reusable 3D layout manager.  This area is extremely
+  rough.  Need more design work. 
+  </p>
+  
+  </body>
+</html>

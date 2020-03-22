@@ -1,0 +1,86 @@
+#!/bin/bash
+#
+# lg3d-dev [<options>] [<config-file>]
+#
+# Run the LG desktop in "development mode" as a normal
+# application (in a window) under the control of another
+# window system. This mode does not support native window
+# applications; only 3D applications are supported.
+
+usage()
+{
+    echo
+    echo "lg3d-dev [<options>] [<config-file>]"
+    echo "    -f               : Run in the no-border-full-screen mode" 
+    echo "    -D<name>=<value> : define JVM property for the display server"
+    echo "    -X<java-option>  : pass not-standard X option to java"
+    echo "    -h               : print this help"
+    echo
+
+    exit $1
+}
+
+DISPCONFIG="j3d1x1"
+
+while [ $# -gt 0 ]
+do
+    case "$1" in
+    -f)     DISPCONFIG="j3d1x1-nbfs"            ;;
+    -D*)    DS_JVM_OPTS="${DS_JVM_OPTS} $1"	;;
+    -X*)    DS_JVM_OPTS="${DS_JVM_OPTS} $1"	;;
+    -agen*) DS_JVM_OPTS="${DS_JVM_OPTS} $1"	;;
+    -yjp)   DS_JVM_OPTS="${DS_JVM_OPTS} -agentlib:yjpagent"		;;
+    -jc)    DS_JVM_OPTS="${DS_JVM_OPTS} -Dcom.sun.management.jmxremote"	;;
+    -h*)    usage 0				;;
+    -*)     usage 1				;;
+    *)	    break				;;
+    esac
+
+    shift
+done
+
+SCRIPTDIR=`dirname $0`
+. ${SCRIPTDIR}/setup
+
+CONFIG="$1"
+
+if [ -f ${SCRIPTDIR}/../etc/lg3d/${CONFIG} ]; then
+  echo "Using config file ${CONFIG}"
+else
+  CONFIG="lgconfig_1p_nox.xml"
+fi
+
+export LGCONFIG="file://${ETCDIR}/lg3d/${CONFIG}"
+export DISP_CONFIG="-Dlg.displayconfigurl=file://${ETCDIR}/lg3d/displayconfig/${DISPCONFIG}"
+export LG_SETTINGS="${LG_SETTINGS} -Dlg.fws.mode=dev ${TOOLKIT} ${DS_JVM_OPTS}"
+
+# comment out the following until we start uring RMI again
+# pkill -f "rmiregistry ${RMI_PORT}"
+# sleep 1
+# rmiregistry ${RMI_PORT} &
+
+JAVACMD="${JAVA_HOME}/bin/java $JVMARGS -Xbootclasspath/a:${BOOTCLASSPATH} ${PROFILE_FLAGS} ${DEBUG_FLAGS} ${CONFIGDIR} -Dj3d.sortShape3DBounds=true -Dlg.configurl=${LGCONFIG} ${DISP_CONFIG} ${LG_SETTINGS} org.jdesktop.lg3d.displayserver.Main"
+
+echo "LG3D Dir         : ${LGDIR}"           >> ${LOGFILE}
+echo "LGCONFIG         : ${LGCONFIG}"        >> ${LOGFILE}
+echo "LG_SETTINGS      : ${LG_SETTINGS}"     >> ${LOGFILE}
+echo "LGX11HOME        : ${LGX11HOME}"       >> ${LOGFILE}
+if [ -f ${LGX11HOME}/VERSION ] ; then
+echo "X Server Version : `cat ${LGX11HOME}/VERSION`" >> ${LOGFILE}
+else
+echo "X Server Version : NOT AVAILABLE!"     >> ${LOGFILE}
+fi
+echo "JAVA_HOME        : ${JAVA_HOME}"       >> ${LOGFILE}
+echo "CLASSPATH        : ${CLASSPATH}"       >> ${LOGFILE}
+echo "PATH             : ${PATH}"            >> ${LOGFILE}
+echo "LD_LIBRARY_PATH  : ${LD_LIBRARY_PATH}" >> ${LOGFILE}
+echo "JAVACMD          : ${JAVACMD}"         >> ${LOGFILE}
+
+
+if [ ${OS} == solaris ]; then
+    # Workaround for bug 421: there is something wrong with 
+    # this tee command on solaris
+    ${JAVACMD} 
+else
+    ${JAVACMD} 2>&1 | tee -a ${LOGFILE} | egrep "SEVERE|WARNING|ClassVersionError"
+fi

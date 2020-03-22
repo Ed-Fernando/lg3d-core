@@ -1,0 +1,33 @@
+#!/bin/bash
+# 2005-02-17 Erwann Chenede - <erwann.chenede@sun.com>
+# quick and dirty test for Composite extension and Hardware acceleration
+
+XDPYINFO=`which xdpyinfo`
+GLXINFO=`which glxinfo`
+ZENITY=`which zenity`
+echo $XDPYINFO
+
+COMPOSITE="no"
+DIRECT_RENDERING="no"
+
+eval $XDPYINFO | grep -q Composite
+if [ $? == 0 ]; then
+    COMPOSITE="yes"
+fi
+
+eval $GLXINFO | grep -q "direct rendering: Yes"
+if [ $? == 0 ]; then
+    DIRECT_RENDERING="yes"
+fi
+
+if [ "$COMPOSITE" == "no" ]; then
+  eval $ZENITY --error --text \"The Looking Glass desktop will not work with the current X server as the Composite Extension is not enabled.\\n\\nThis probably means that you are not using the right X server. At the graphical login prompt press ctrl-alt-F7 or ctrl-alt-F8 and try to login again.\\n\\nPress Ok to return to the graphical login prompt\"
+  exit 1
+fi
+
+if [ "$DIRECT_RENDERING" == "no" ]; then
+  eval $ZENITY --question --text \"The current X server configuration does not support OpenGL direct rendering \(e.g your video card hardware acceleration is not configured properly to be used by the current X server\).\\n\\nThe Looking Glass desktop can still be started but due to lack of acceleration it will be _Extremely_ slow.\\n\\nDo you want to proceed anyway \?\"
+  if [ $status != 0 ]; then
+    exit 1
+  fi
+fi

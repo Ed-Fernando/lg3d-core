@@ -1,0 +1,30 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+  <body>
+  The system searches for configuration files *.lgcfg in the following
+  order
+       ~/.lg3d
+       etc/lg3d/                  (actually this is in the jar)
+       ../lg3d-demo-apps/config
+       ../lg3d-incubator/config
+
+  Each directory may contain multiple files and each file will contain one
+  or more ConfigData objects. All files are scanned and the first occurance of 
+  a SceneManagerConfig object will be used to create a SceneManager. 
+ 
+  Once the SceneManager is created all other configuration data is injected 
+  into the event system. The scene manager (and it's subcomponents) will have
+  registered interest in the relevant config events as appropriate.
+  
+  Once all configuration data has been sent a ConfigurationCompleteEvent is
+  posted. 
+ 
+  Filenames have no relevance, although they do provide an ordering in which
+  files are read.
+  
+  TODO  
+     Veto config to stop configData being used
+     Order config which controls the order things appear in lists/menus etc
+  </body>
+</html>

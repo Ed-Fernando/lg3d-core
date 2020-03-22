@@ -1,0 +1,64 @@
+#!/bin/bash
+#
+# lg3d-gdm-session
+#
+# Start the LG3D desktop environment from a gdm session
+#
+
+SCRIPTDIR=`dirname $0`
+. ${SCRIPTDIR}/setup
+
+xhost +localhost
+. ${SCRIPTDIR}/test-hwAccel
+
+# Force nvidia cards to synchronize with vertical retrace
+export __GL_SYNC_TO_VBLANK=1
+
+export DISPLAY=:0.0
+export LD_LIBRARY_PATH=${LGX11HOME}/exports/lib:${LD_LIBRARY_PATH}:${FWSLIB}
+
+# Start the Display Server
+
+export DISP_CONFIG="-Dlg.displayconfigurl=file://${ETCDIR}/lg3d/displayconfig/j3d1x1-nbfs"
+# export DISP_CONFIG="-Dlg.displayconfigurl=file://${SCRIPTDIR}/../etc/lg3d/displayconfig/j3d1x2-flat"
+
+# Uncomment this to run in half screen mode (for debug)
+# export DISP_CONFIG="-Dlg.displayconfigurl=file://${SCRIPTDIR}/../etc/lg3d/displayconfig/j3d1x1-halfscr"
+
+# This is debug code to ensure that the proper OpenGL library is being used
+# ldd /usr/X11R6/bin/glxgears
+# /usr/X11R6/bin/glxinfo
+
+# TODO: currently, this assumes that the session's X display is always :0.
+# It would be nice to be more flexible than this.
+DISPLAY_PROPERTY="-Dlg.lgserverdisplay=:0"
+
+export LG_SETTINGS="${LG_SETTINGS} -Dlg.fws.mode=session ${DISPLAY_PROPERTY} ${TOOLKIT}"
+
+INT_REQUIRED=`${SCRIPTDIR}/lg3d-x11-interface-required`
+export LG_SETTINGS="${LG_SETTINGS} -Dlg.fws.x11.interfaceRequired=${INT_REQUIRED} ${DS_JVM_OPTS}"
+
+# comment out the following until we start uring RMI again
+# pkill -f "rmiregistry ${RMI_PORT}"
+# sleep 1
+# rmiregistry ${RMI_PORT}&
+
+JAVACMD="${JAVA_HOME}/bin/java $JVMARGS -Xbootclasspath/a:${BOOTCLASSPATH} ${PROFILE_FLAGS} ${DEBUG_FLAGS} ${CONFIGDIR} -Dj3d.sortShape3DBounds=true -Dlg.configurl=${LGCONFIG} ${DISP_CONFIG} ${LG_SETTINGS} org.jdesktop.lg3d.displayserver.Main"
+x1
+
+echo "LG3D Dir         : ${LGDIR}"           >> ${LOGFILE}
+echo "LGCONFIG         : ${LGCONFIG}"        >> ${LOGFILE}
+echo "LG_SETTINGS      : ${LG_SETTINGS}"     >> ${LOGFILE}
+echo "LGX11HOME        : ${LGX11HOME}"       >> ${LOGFILE}
+if [ -f ${LGX11HOME}/VERSION ] ; then
+  echo "X Server Version : `cat ${LGX11HOME}/VERSION`" >> ${LOGFILE}
+else
+  echo "X Server Version : NOT AVAILABLE!"     >> ${LOGFILE}
+fi
+echo "JAVA_HOME        : ${JAVA_HOME}"       >> ${LOGFILE}
+echo "CLASSPATH        : ${CLASSPATH}"       >> ${LOGFILE}
+echo "PATH             : ${PATH}"            >> ${LOGFILE}
+echo "LD_LIBRARY_PATH  : ${LD_LIBRARY_PATH}" >> ${LOGFILE}
+echo "JAVACMD          : ${JAVACMD}"         >> ${LOGFILE}
+
+(${JAVACMD} &) | tee -a ${LOGFILE} | grep "SEVERE\|WARNING\|ClassVersionError"

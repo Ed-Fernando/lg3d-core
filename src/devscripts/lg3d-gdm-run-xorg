@@ -1,0 +1,26 @@
+#!/bin/bash
+#
+# lg3d-gdm-run-xorg
+#
+# Start the LG3D desktop environment from a gdm session
+# Intended to be called directly by gdm.
+
+SCRIPTDIR=`dirname $0`
+. ${SCRIPTDIR}/setup
+
+# Get the system Xorg module path and prepend the lg3d-x11 modulepath
+# in order to make sure that the lg3d modules are found first
+XORGMODULEPATH=`${SCRIPTDIR}/get-xorg-modulepath`
+MODULEPATH="${LGX11HOME}/exports/lib/modules,$XORGMODULEPATH"
+
+XS_EXEC="Xorg"
+XS_ARGS="+extension Composite -modulepath $MODULEPATH"
+XSERVER="${LGX11HOME}/programs/Xserver/${XS_EXEC}"
+XS_CMD="${XSERVER} ${XS_ARGS}"
+
+if [ ${LD_LIBRARY_PATH:-0} == 0 ]; then
+  export LD_LIBRARY_PATH=""
+fi
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/bin:${LGX11HOME}/exports/lib"
+
+$XS_CMD

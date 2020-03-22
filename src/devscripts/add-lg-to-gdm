@@ -1,0 +1,113 @@
+#!/bin/bash -f
+#
+# add-lg-to-gdm
+#
+# This script adds lg3d-app-full as a gdm session type.
+# The only thing which it needs to do is to create an appropriate
+# lg.desktop file in the proper directory. This directory may differ
+# depending on the operating system. So it first determines the OS
+# type. For Linux OSs it determines whether the package manager dpkg 
+# or rpm is used, and then asks the package manager for the directory
+# into which .desktop files should be installed.
+#
+# NOTE: this script should be run as root.
+#
+# NOTE: this script only works for installations of LG into /usr/share/lg3d.
+
+dpkg=/usr/bin/dpkg
+rpm=/bin/rpm
+dtopFileName=lg.desktop
+lgscript=/usr/share/lg3d/bin/lg3d-app-full
+
+if [ $USER != root ]; then
+    echo "You must run this script with root permissions."
+    echo "Operation failed. LG will not be added as a gdm session."
+    exit 1
+fi
+
+if [ -x /bin/arch ]; then
+	export ARCH=`/bin/arch`
+else
+	export ARCH=`uname -m`
+fi
+if [ ${OS:-0} == 0 ]; then
+  if [ ${OSTYPE:-0} == 0 ]; then
+    if [ "$ARCH" == "i86pc" ]; then
+      export OS="solaris"
+    elif [ `uname -s` == "Linux" ]; then
+      export OS="linux"
+    else
+      export OS="Unknown"
+    fi
+  elif [ "${OSTYPE}" == "linux-gnu" ]; then
+  	export OS="linux"
+  else
+    export OS=`echo ${OSTYPE} | cut -c1-7`
+  fi
+fi
+
+if [ $OS == "solaris" ]; then
+    echo "LG does not yet support Solaris gdm sessions."
+    echo "Operation failed. LG will not be added as a gdm session."
+    exit 1
+fi
+
+# Linux
+
+if [ ! -e  $lgscript ]; then
+    echo "This script attempts to configure gdm to run the script:"
+    echo $lgscript
+    echo "This script does not exist."
+    echo "Operation failed. LG will not be added as a gdm session."
+    exit 1
+fi
+
+if [ -e  $dpkg ]; then
+    dtopSessionDirDpkg=`$dpkg -L gdm | fgrep xsessions | head -1`
+fi
+if [ -e $rpm ]; then
+    dtopSessionDirRpm=`rpm -ql gdm | fgrep xsessions | head -1`
+fi
+
+if [ "$dtopSessionDirDpkg" == "" ]; then
+    if [ "$dtopSessionDirRpm" == "" ]; then
+        # Before giving up try the Fedora location
+        if [ -e /usr/share/xsessions ]; then
+    	    dtopSessionDir=/usr/share/xsessions
+	else 
+    	    # Neither dpkg nor rpm is telling us the directory
+            echo "Cannot determine the .desktop file directory"
+            echo "Operation failed. LG will not be added as a gdm session."
+	    exit 1
+	fi
+    else 
+	# System is using rpm. Get the directory from rpm.
+	dtopSessionDir=$dtopSessionDirRpm
+    fi
+else
+    if [ "$dtopSessionDirRpm" == "" ]; then
+	# System is using dpkg. Get the directory from dpkg.
+	dtopSessionDir=$dtopSessionDirDpkg
+    else 
+	# Both dpkg and rpm are telling us the directory! This is invalid.
+        echo "Cannot determine whether to use dpkg or rpm to find the .desktop file directory"
+	echo "Operation failed. LG will not be added as a gdm session."
+	exit 1
+    fi
+fi
+
+/bin/rm -f $dtopSessionDir/$dtopFileName
+
+cat > $dtopSessionDir/$dtopFileName <<HERE
+[Desktop Entry]
+Encoding=UTF-8
+Name=Looking Glass
+Comment=This session logs you into the Looking Glass 3D desktop
+Exec=/usr/share/lg3d/bin/lg3d-app-full
+Icon=
+Type=Application
+HERE
+
+echo "Success. LG has been added as a gdm session."
+
+exit 0

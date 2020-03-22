@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?> 
+<java version="1.5.0-beta2" class="java.beans.XMLDecoder"> 
+ <object class="org.jdesktop.lg3d.displayserver.SplashConfig"> 
+<!--  <void property="messageText"> 
+   <string>Release 0.7.1 (pre-alpha)</string> 
+  </void> -->
+  <void property="showText"> 
+   <boolean>true</boolean> 
+  </void> 
+  <void property="runSplash"> 
+   <boolean>true</boolean> 
+  </void> 
+  <void property="imageLocation"> 
+   <string>resources/images/splash/StanfordSplashW.png</string> 
+  </void> 
+ </object> 
+</java> 

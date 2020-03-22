@@ -1,0 +1,31 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+  <head>
+    <title></title>
+  </head>
+  <body>
+  <p>
+  The new Animation system for Project Looking Glass. These animations provide
+  a robust mechanism for describing multiple animations on a Component3D. 
+  Multiple Animations can be added to a Component3D and they will combine to 
+  create a single visual effect.
+  </p>
+  <p>
+  The order in which Animations are added to a Component will effect the 
+  resultant animation. For example 
+                c3d.addAnimation( new TranslationAnimation(...) );
+                c3d.addAnumation( new RotationAnimation(....) );
+     will produce very different rendering from
+                c3d.addAnumation( new RotationAnimation(....) );
+                c3d.addAnimation( new TranslationAnimation(...) );
+                
+  Specifically each Animation operates on its own Matrix and each frame these
+  matrices are multiplied together. The Animations are grouped in a stack, with
+  first animation added being at the bottom of the stack, and closest to the leaf
+  of the scene graph.
+  
+  TODO - generate an image showing the different results
+  </p>
+  </body>
+</html>

@@ -1,0 +1,15 @@
+#!/bin/sh
+
+if [ ${1:-0} == 0 ]; then
+  echo "Usage : junit-gui TESTCASE"
+  exit 1
+fi
+
+DIR=${0%/*}
+
+export LOG="-Djava.util.logging.config.file=${DIR}/etc/jz/logging.properties"
+
+export CLASSPATH="${DIR}/../../../ext-unbundled/junit.jar:${DIR}/../../../build/classes:${DIR}/../../../src"
+echo "CLASSPATH: $CLASSPATH"
+
+java $LOG $2 junit.textui.TestRunner $1

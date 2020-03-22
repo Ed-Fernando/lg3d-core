@@ -1,0 +1,52 @@
+/**
+ * Project Looking Glass
+ *
+ * $RCSfile: NativeWindowControl.java,v $
+ *
+ * Copyright (c) 2004, Sun Microsystems, Inc., All Rights Reserved
+ *
+ * Redistributions in source code form must reproduce the above
+ * copyright and this condition.
+ *
+ * The contents of this file are subject to the GNU General Public
+ * License, Version 2 (the "License"); you may not use this file
+ * except in compliance with the License. A copy of the License is
+ * available at http://www.opensource.org/licenses/gpl-license.php.
+ *
+ * $Revision: 1.8 $
+ * $Date: 2006-09-26 23:13:41 $
+ * $State: Exp $
+ */
+package org.jdesktop.lg3d.displayserver.nativewindow;
+
+/**
+ * Still work in progress.  This provides only basic features at this moment.
+ */
+public interface NativeWindowControl {
+    public long getWID();
+    public void setVisible(boolean visible);
+    public void destroy();
+    public boolean isMaximized();
+    public void setMaximized(boolean maximize);
+    public String getName();
+    public void setSize(int w, int h);
+    public int getWidth();
+    public int getHeight();
+    public void setLocation(int x, int y);
+    public int getX();
+    public int getY();
+    public void moveToTop();
+    public void setInputFocus();
+    public boolean isCloseable();
+    public boolean isMaximizable();
+    public boolean isMinimizable();
+    public boolean isResizable();
+    public boolean isNormalWindow();
+    public boolean isDecorated();
+    public boolean isDockable();
+    public long getRootWID();
+    public void setWindowAssociation(String subWinCls, String subWinName, String subWinTitlePattern);
+    public void setWindowAssociation(
+            String targetWinResCls, String targetWinResName, String targetWinTitlePattern, 
+            String subWinResCls, String subWinResName, String subWinTitlePattern);
+}

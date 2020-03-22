@@ -1,0 +1,7 @@
+
+lgconfig file naming 
+
+   1p - single process, the server will not accept connections
+   mp - multi process, the server will accept connections
+   x  - x integration enabled
+   nox - no X integration

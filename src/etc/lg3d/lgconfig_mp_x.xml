@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?> 
+<java version="1.4.2_04" class="java.beans.XMLDecoder"> 
+ <object class="org.jdesktop.lg3d.displayserver.LgConfig"> 
+  <void property="nativeWinIntegration">
+      <string>org.jdesktop.lg3d.displayserver.nativewindow.x11.X11IntegrationModule</string>
+  </void>
+  <void property="nativeWinLookAndFeel">
+      <string>org.jdesktop.lg3d.scenemanager.utils.decoration.GlassyNativeWindowLookAndFeel</string>
+  </void>
+  <void property="x11IntegrationEnabled"> 
+   <boolean>true</boolean>
+  </void> 
+  <void property="clientServer"> 
+   <boolean>true</boolean>
+  </void> 
+  <void property="foundationWinSys"> 
+   <string>org.jdesktop.lg3d.displayserver.fws.x11.WinSysX11</string>
+  </void> 
+ </object> 
+</java> 

@@ -1,0 +1,36 @@
+#!/bin/bash
+#
+# Searches the Xorg config file for ModulePath entries and prints out 
+# a comma separated list of them, suitable for use with the Xorg 
+# -modulepath argument.
+
+if [ -e /usr/lib/xorg/modules ]; then
+    # Default for newer linuxes with Xorg 7.0 or later
+    FALLBACK_MODULE_PATH=/usr/lib/xorg/modules
+else
+    # Default for older Linuxes with Xorg 6.9 or earlier
+    FALLBACK_MODULE_PATH=/usr/X11R6/lib/modules
+fi
+
+CONFIG_FILE=/etc/X11/xorg.conf
+
+if [ ${CONFIG_FILE:-0} == 0 ]; then
+    echo $FALLBACK_MODULE_PATH
+    exit 0
+fi
+
+if [ ! -e ${CONFIG_FILE} ]; then
+    echo $FALLBACK_MODULE_PATH
+    exit 0
+fi
+
+PATH_LINES=`/bin/grep -v '^#' $CONFIG_FILE | /bin/fgrep ModulePath | awk '{print $2}' | sed 's.\"..g'` 
+
+PATH_LINES=`echo $PATH_LINES | sed 's. .,.g'`
+
+if [ ${PATH_LINES:-0} == 0 ]; then
+    echo $FALLBACK_MODULE_PATH
+    exit 0
+fi
+
+echo $PATH_LINES

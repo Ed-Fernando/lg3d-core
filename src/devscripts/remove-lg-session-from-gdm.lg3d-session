@@ -1,0 +1,189 @@
+##
+## NOTE: this is the version that removes lg3d-session from gdm.conf.
+## This configuration is not yet supported.
+##
+
+#!/usr/bin/perl 
+# 2005-02-12 Erwann Chenede - <erwann.chenede@sun.com>
+#
+# This script removes the LG session from the existing gdm configuraion
+#
+
+sub check_root {
+
+  $result = `id -u`;
+  if ($result != 0)
+  {
+    print "Only root should run this program. exiting\n";
+    exit (1);
+  }
+}
+  
+sub get_gdm_desktop_files_location {
+  if ($usedpkg eq "true") {
+    @list=`dpkg -L gdm`;
+  } else {
+    @list=`rpm -ql gdm`;
+  }
+ foreach $_ (@list)
+ {
+  if (/xsessions/)
+  {
+    $dirname = $_;
+    chomp $dirname;
+    $dirname =~ s/xsessions.*/xsessions/;
+    return $dirname;
+  }
+ }
+ print ("Error couldn't retrieve desktop file location. exiting\n");
+ exit (1);
+}
+
+sub get_gdm_conf_filename {
+  if ($usedpkg eq "true") {
+    @list=`dpkg -L gdm`;
+  } else {
+    @list=`rpm -ql gdm`;
+  }
+ foreach $_ (@list) 
+  {
+    if (/\/gdm.conf/)
+    {
+      $filename = $_;
+      chomp $filename;
+      return $filename;
+    }
+  }
+  print ("Error couldn't retrieve gdm.conf location. exiting\n");
+  exit (1);
+}
+
+sub check_gdm_installed {
+
+  print ("Checking if gdm is installed on the system....");
+  if ($usedpkg eq "true") {
+    $result=`dpkg --get-selections gdm`;
+  } else {
+    $result=`rpm -q gdm`;
+  }
+
+  if ($result =~ /package/)
+  {
+    print ("No\n");
+    print ("gdm doesn't seem to be installed on your system. exiting.\n");
+    exit (1);
+  }
+  else
+  {
+    print ("Yes\n");
+  }
+}
+sub get_lg_install_path ();
+sub get_lg_install_path ()
+{
+#  $suggested_path="/opt/lg3d-core";
+#  if ( -d $suggested_path)
+#  {
+#    print "Please input the installation location of the lg distribution (suggested=/opt/lg3d-core): ";
+#  }
+#  else
+#  {
+#    print "Please input the installation location of the lg distribution : ";
+#    $suggested_path = "";
+#  }
+#  $new_path=<STDIN>;
+#  chomp $new_path;
+#  if (!$new_path && !$suggested_path)  {
+#    print "No path entered. Please retry.\n";
+#    $new_path = get_lg_install_path ();
+#  } else {
+#    $new_path = $suggested_path;
+#    print "using $new_path\n";
+#  }
+#  return $new_path;
+  return "/usr/share/lg3d";
+}
+
+sub replace_backup_gdm_conf ()
+{
+  $new_gdm_filename = $gdm_filename;
+  $new_gdm_filename =~ s/gdm.conf/gdm.conf.before-LG/;
+  if ( -e $new_gdm_filename && -e $gdm_filename)
+  {
+    rename ($new_gdm_filename, $gdm_filename) || die "couldn't rename $new_gdm_filename as $gdm_filename: $!";
+    print "$new_gdm_filename moved to $gdm_filename\n";
+  }
+  else
+  {
+    print "Couldn't find $new_gdm_filename and $gdm_filename.\n skipping moving $new_gdm_filename as $gdm_filename\n";
+  }
+    
+}
+
+sub remove_lg_dir 
+{
+#  my ($source) = @_;
+#  if ( -d $source)
+#  {
+#    print  "Do you want to remove $source directory (type yes) : ";
+#    chomp ($response=<STDIN>);
+#    $response =~ tr/A-Z/a-z/;
+#    if ($response eq "yes")
+#    {
+#      $result = system("rm -Rf $source");
+#      if ($result != 0)
+#      {
+#	print "error trying to remove the $lg_install_path directory\n";
+#      }
+#      else
+#      {
+#	print "the $lg_install_path directory as been removed\n";
+#      }
+#    }
+#    else
+#    {
+#      print "The $source directory will not be removed\n";
+#    }
+#  }
+#  else
+#  {
+#    print "The $source directory doesn't exist. skipping removing it\n";
+#  }
+}
+  
+sub remove_lg_desktop_file
+{
+  my ($desktopdir, $lg_path) = @_;
+  $filename = "$desktopdir/lg.desktop";
+  if (-e $filename)
+  {
+    unlink $filename;
+    print "$filename as been erased\n";
+  }
+  else
+  {
+    print "Couldn't find $filename skipping...\n";
+  }
+}
+
+
+# Main
+
+$usedpkg = "true";
+
+check_root ();
+
+check_gdm_installed ();
+
+$gdm_filename = get_gdm_conf_filename ();
+
+$lg_install_path = get_lg_install_path ();
+
+replace_backup_gdm_conf ();
+
+remove_lg_dir ($lg_install_path);
+
+$gdm_session_desktop_file_location = get_gdm_desktop_files_location ();
+
+remove_lg_desktop_file ($gdm_session_desktop_file_location, $lg_install_path);
+

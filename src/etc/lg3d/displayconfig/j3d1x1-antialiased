@@ -1,0 +1,70 @@
+/*
+ ************************************************************************
+ *  
+ * Java 3D Calibration file for single-screen desktop configuration with
+ * neither head tracking nor 6DOF sensor tracking.
+ *  
+ ************************************************************************
+ */
+
+// Create a new screen object and associate it with a logical name and a
+// number.  This number is used as an index to retrieve the AWT GraphicsDevice
+// from the array that GraphicsEnvironment.getScreenDevices() returns.
+// 
+(NewScreen center 0)
+
+// Set the available image area for a full screen.  This is important when
+// precise scaling between objects in the virtual world and their projections
+// into the physical world is desired through use of an explicit ScreenScale
+// view attribute.  The defaults are 0.365 meters for width and 0.292 meters
+// for height.
+// 
+(ScreenAttribute center	PhysicalScreenWidth  0.360)
+(ScreenAttribute center	PhysicalScreenHeight 0.288)
+(ScreenAttribute center	WindowSize           (700 600))
+
+// Set the TrackerBaseToImagePlate transform for this single screen.  This
+// transforms points in tracker base coordinates to the screen's image plate
+// coordinates, where the origin of the image plate is defined to be the lower
+// left corner of the screen with X increasing to the right and Y increasing to
+// the top.
+//
+// Without head or sensor tracking the tracker base is still needed as a point
+// of reference for describing the orientation and position of each screen to
+// the others.  When constructing a ConfiguredUniverse using a configuration
+// file the coexistence to tracker base transform is set to identity by
+// default, so the tracker base origin and orientation will also set the origin
+// and orientation of coexistence coordinates in the physical world.
+//
+// Normally with a single screen and no tracking a configuration file would not
+// be used, and coexistence coordinates would automatically be set up to map to
+// the center of the screen (from the View's default coexistenceCenteringEnable
+// value of true).  Since a configuration file is being used, the tracker base
+// needs to be explicitly set to the center of the screen in order to place the
+// center of coexistence there, so that ViewPlatform coordinates can be mapped
+// to physical coordinates in a useful position.
+// 
+// TODO allow coexistenceCenteringEnable setting from config?
+// 
+(ScreenAttribute center TrackerBaseToImagePlate
+                        (Translate 0.180 0.144 0.0))
+
+// Create a view using the defined screen.
+// 
+(NewView view0)
+(ViewAttribute view0 Screen center)
+
+// Set the View's WindowEyepointPolicy to RELATIVE_TO_FIELD_OF_VIEW, which is
+// the normal default for single screens.  RELATIVE_TO_COEXISTENCE is needed
+// for multi-screen viewing environments, so ConfiguredUniverse will set it to
+// that policy by default when using a configuration file.  That default
+// requires manually setting the nominal position of the eyes in coexistence
+// coordinates. 
+//
+(ViewAttribute view0 WindowEyepointPolicy RELATIVE_TO_FIELD_OF_VIEW)
+
+// Enable stereo viewing if desired
+// (ViewAttribute  view0   StereoEnable            true)
+
+// Enable antialising 
+(ViewAttribute  view0   AntialiasingEnable            true)

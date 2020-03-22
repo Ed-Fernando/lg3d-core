@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?> 
+<java version="1.5.0" class="java.beans.XMLDecoder"> 
+ <object class="org.jdesktop.lg3d.scenemanager.test.TestSceneManagerConfig"/> 
+ <object class="org.jdesktop.lg3d.scenemanager.config.ApplicationDescription"> 
+  <void property="exec"> 
+   <string>xterm -display :0</string> 
+  </void> 
+  <void property="iconFilename"> 
+   <string>resources/images/icon/system.png</string> 
+  </void> 
+  <void property="name"> 
+   <string>xterm</string> 
+  </void> 
+ </object> 
+</java> 

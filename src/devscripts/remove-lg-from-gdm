@@ -1,0 +1,85 @@
+#!/bin/bash -f
+#
+# remove-lg-to-gdm
+#
+# This script removes lg3d-app-full as a gdm session type.
+#
+# NOTE: this script should be run as root.
+#
+# NOTE: this script only works for installations of LG into /usr/share/lg3d.
+
+dpkg=/usr/bin/dpkg
+rpm=/bin/rpm
+dtopFileName=lg.desktop
+
+if [ -x /bin/arch ]; then
+  export ARCH=`/bin/arch`
+else
+  export ARCH=`uname -m`
+fi
+if [ ${OS:-0} == 0 ]; then
+  if [ ${OSTYPE:-0} == 0 ]; then
+    if [ "$ARCH" == "i86pc" ]; then
+      export OS="solaris"
+    elif [ `uname -s` == "Linux" ]; then
+      export OS="linux"
+    else
+      export OS="Unknown"
+    fi
+  elif [ "${OSTYPE}" == "linux-gnu" ]; then
+  	export OS="linux"
+  else
+    export OS=`echo ${OSTYPE} | cut -c1-7`
+  fi
+  if [ "$ARCH" == "x86_64" ]; then
+      export ARCH="i686"
+  fi
+fi
+
+if [ $OS == "solaris" ]; then
+    echo "LG does not yet support Solaris gdm sessions."
+    echo "Aborted."
+    exit 1
+fi
+
+# Linux
+
+if [ -e  $dpkg ]; then
+    dtopSessionDirDpkg=`$dpkg -L gdm | fgrep xsessions | head -1`
+fi
+if [ -e $rpm ]; then
+    dtopSessionDirRpm=`rpm -ql gdm | fgrep xsessions | head -1`
+fi
+
+if [ "$dtopSessionDirDpkg" == "" ]; then
+    if [ "$dtopSessionDirRpm" == "" ]; then
+        # Before giving up try the Fedora location
+        if [ -e /usr/share/xsessions ]; then
+    	    dtopSessionDir=/usr/share/xsessions
+	else 
+    	    # Neither dpkg nor rpm is telling us the directory
+            echo "Cannot determine the .desktop file directory"
+            echo "Aborted. LG will not be added as a gdm session."
+	    exit 1
+	fi
+    else 
+	# System is using rpm. Get the directory from rpm.
+	dtopSessionDir=$dtopSessionDirRpm
+    fi
+else
+    if [ "$dtopSessionDirRpm" == "" ]; then
+	# System is using dpkg. Get the directory from dpkg.
+	dtopSessionDir=$dtopSessionDirDpkg
+    else 
+	# Both dpkg and rpm are telling us the directory! This is invalid.
+        echo "Cannot determine whether to use dpkg or rpm to find the .desktop file directory"
+	echo "Aborted. LG will not be added as a gdm session."
+	exit 1
+    fi
+fi
+
+/bin/rm -f $dtopSessionDir/$dtopFileName
+
+echo "Success. LG has been removed as a gdm session."
+
+exit 0
