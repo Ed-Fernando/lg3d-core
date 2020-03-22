@@ -1,0 +1,12 @@
+#!/bin/bash
+#
+if [ -e /usr/share/debconf/confmodule ]; then
+    . /usr/share/debconf/confmodule
+    #
+    # Reset the license checks since these questions have to be answered
+    # each time the installation happens.
+    #
+    db_reset lg3d-java3d/license-declined
+    db_reset lg3d-java3d/license-check
+    db_reset lg3d-java3d/license-info
+fi

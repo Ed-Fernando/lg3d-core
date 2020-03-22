@@ -1,0 +1,27 @@
+<!-- Rules and targets for building X11 -->
+<project basedir="." default="..." name="build-incubator">
+    <dirname property="imported.basedir" file="${ant.file.build-setup}"/>
+
+    <target name="compile-incubator" description="Build lg3d-incubator project"
+        depends="init" if="incubator.exists">
+        <ant inheritAll="false" dir="${incubator.dir}">
+            <property name="classpath" value="${build.classes.dir}"/>
+        </ant>
+    </target>
+
+    <target name="clean-incubator" description="Clean lg3d-incubator project"
+        if="incubator.exists">
+        <ant inheritAll="false" dir="${incubator.dir}" target="clean"/>
+    </target>
+
+    <target name="jar-incubator" description="Build and jar lg3d-incubator project"
+        depends="init" if="incubator.exists" unless="build.noincubator">
+        <ant inheritAll="false" dir="${incubator.dir}" target="jar">
+            <property name="classpath" value="${build.classes.dir}"/>
+        </ant>
+        <copy todir="${build.lib.dir}" failonerror="false">
+            <fileset dir="${incubator.dir}/build/${build.location}/lib/"/>
+        </copy>
+    </target>
+
+</project>

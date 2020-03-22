@@ -1,0 +1,12 @@
+These directories need to contain the unpacked distributions of Java 3D 1.4.0 beta 2 and JDK 1.5.0_05
+
+Download Java3D from here https://java3d.dev.java.net/binary-builds.html 
+cd to the java3d direcory and unzip the newly downloaded file
+
+Download JDK 1.5.0_05 binary (not the rpm) from here http://java.sun.com/j2se/1.5.0/download.jsp
+cd to the jdk directory and executre the downloaded binary file.
+
+Once both this is complete cd back to lg3d-core root and run
+
+	ant dpkg-jdk
+	ant dpkg-java3d

@@ -1,0 +1,31 @@
+<project basedir="." default="..." name="build-junit">
+    <available property="junit.exists" file="${extun.dir}/junit.jar"/>
+
+    <target name="junit-tests" description="Build Junit tests">
+	<if>
+	    <istrue value="${junit.exists}"/>
+	    <then>
+		<javac debug="true"
+		       deprecation="${build.showdeprecation}"
+		       destdir="${build.classes.dir}"
+		       nowarn="true"
+		       source="1.5"
+		       sourcepath=""
+		       target="1.5">
+		    <classpath>
+			<pathelement location="${core.ext.dir}/escher-0.2.2.lg.jar"/>
+			<pathelement location="${extun.dir}/junit.jar"/>
+			<pathelement location="${build.classes.dir}"/>
+		    </classpath>
+		    <src path="${testsrc.dir}"/>
+		    <include name="org/**"/>
+		    <exclude name="org/jdesktop/lg3d/displayserver/fws/x11/**"/>
+		    <exclude name="org/jdesktop/lg3d/apps/x11integration/**"/>
+		</javac>
+	    </then>
+	    <else>
+		<echo message="Skipping junit tests because junit.jar is not installed in ext-unbundled"/>
+	    </else>
+	</if>
+    </target>
+</project>

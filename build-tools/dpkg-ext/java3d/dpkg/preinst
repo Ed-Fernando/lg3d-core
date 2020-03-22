@@ -1,0 +1,19 @@
+#!/bin/bash -e
+#
+PATH=/usr/sbin:/sbin:/usr/bin:/bin
+export PATH
+
+exitval=0
+
+# Source debconf library.
+if [ -e /usr/share/debconf/confmodule ]; then
+    . /usr/share/debconf/confmodule
+    
+    db_get lg3d-java3d/license-check
+    if test "$RET" != true
+    then
+	exitval=1
+    fi
+fi
+
+exit $exitval

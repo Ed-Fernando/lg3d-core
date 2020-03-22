@@ -1,0 +1,9 @@
+Package: lg3d-java3d
+Version: 1.5.0
+Priority: Optional
+Architecture: @OS_ARCH@
+Essential: no
+Maintainer: Paul Byrne <Paul.Byrne@sun.com>
+Provides: lg3d-java3d
+Depends: lg3d-jdk (>=1.5.0)
+Description: Java 3D repackaged as a .deb for use with Project Looking Glass

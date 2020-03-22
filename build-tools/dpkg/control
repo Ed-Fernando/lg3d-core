@@ -1,0 +1,9 @@
+Package: lg3d-core
+Version: @VERSION@
+Priority: Optional
+Architecture: @OS_ARCH@
+Essential: no
+Maintainer: Paul Byrne <Paul.Byrne@sun.com>
+Provides: lg3d-core
+Depends: sun-java6-jdk
+Description: Project Looking Glass. See http://lg3d.dev.java.net, source code is available from this site under a GPL license.

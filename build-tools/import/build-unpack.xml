@@ -1,0 +1,60 @@
+<project basedir="." default="unpack-ext" name="build-unpack">
+
+    <macrodef name="unpack-java-ext">
+	<attribute name="pkgname"/>
+	<attribute name="srcdir" default="${os.zip.javaext.dir}"/>
+	<attribute name="destdir" default="${os.javaext.dir}"/>
+	<attribute name="enabled" default="true"/>
+	<sequential>
+	    <!--
+	    <echo message="pkgname = @{pkgname}"/>
+	    <echo message="srcdir = @{srcdir}"/>
+	    <echo message="destdir = @{destdir}"/>
+	    <echo message="enabled = @{enabled}"/>
+	    <echo message="wonderland.exists = ${wonderland.exists}"/>
+	    -->
+	    <if>
+		<and>
+		    <istrue value="@{enabled}"/>
+		    <istrue value="${wonderland.exists}"/>
+		</and>
+		<then>
+		    <ant dir="${imported.basedir}" antfile="build-ext.xml">
+			<property name="pkgname" value="@{pkgname}"/>
+			<property name="unpack.src.dir" value="@{srcdir}"/>
+			<property name="unpack.dest.dir" value="@{destdir}"/>
+		    </ant>
+		</then>
+	    </if>
+	</sequential>
+    </macrodef>
+
+    <target name="unpack-j3d"> <unpack-java-ext pkgname="j3d"/> </target>
+    <target name="unpack-jai"> <unpack-java-ext pkgname="jai"/> </target>
+    <target name="unpack-jai-iio"> <unpack-java-ext pkgname="jai_iio"/> </target>
+    <target name="unpack-jogl"> <unpack-java-ext pkgname="jogl"/> </target>
+    <target name="unpack-joal"> <unpack-java-ext pkgname="joal"/> </target>
+    <target name="unpack-jmf"> <unpack-java-ext pkgname="jmf"/> </target>
+    <target name="unpack-fobs"> <unpack-java-ext pkgname="fobs"/> </target>
+    <target name="unpack-jinput"> <unpack-java-ext pkgname="jinput"/> </target>
+
+    <target name="unpack-xremwin">
+	<unpack-java-ext pkgname="xremwin" enabled="${platform-supports-x}"/>
+	<chmod perm="+x" file="${os.javaext.dir}/bin/Xvfb"/>
+    </target>
+
+    <target name="unpack-sgs">
+	<unpack-java-ext pkgname="SunGameServer"
+			 srcdir="${zip.javaext.dir}" destdir="${sgs.javaext.dir}/.."/>
+    </target>
+
+    <target name="unpack-ext"
+	depends="unpack-j3d,unpack-jai,unpack-jai-iio,unpack-jmf,unpack-joal,unpack-jogl,unpack-jinput,unpack-fobs,unpack-xremwin,unpack-sgs"
+	if="wonderland.exists"/>
+
+    <target name="clean-ext" description="Clean the java extension stuff.">
+        <delete dir="${os.javaext.dir}"/>
+        <delete dir="${sgs.javaext.dir}"/>
+    </target>
+
+</project>

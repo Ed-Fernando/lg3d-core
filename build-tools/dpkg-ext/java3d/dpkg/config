@@ -1,0 +1,23 @@
+#!/bin/bash -e
+    
+PATH=/usr/sbin:/sbin:/usr/bin:/bin
+export PATH
+
+# Source debconf library.
+. /usr/share/debconf/confmodule
+
+db_title Java 3D License
+
+db_input critical lg3d-java3d/license-info  || test $? = 30
+db_input critical lg3d-java3d/license-check || test $? = 30
+db_go
+
+db_get lg3d-java3d/license-check
+if test "$RET" != true
+then
+    db_input critical lg3d-java3d/license-declined || test $? = 30
+    db_go
+    exit 1
+fi
+
+exit 0

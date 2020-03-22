@@ -1,0 +1,260 @@
+#!/usr/bin/bash -f
+########################################################################
+# mkpkg
+# script to make Solaris pkg
+########################################################################
+
+########################################################################
+# initialize variables
+########################################################################
+
+# mkpinfo command and mkproto command
+MKPINFO=${0%/*}/mkpinfo
+MKPROTO=${0%/*}/mkproto
+
+
+# pkginfo file
+PKGINFO="pkginfo"
+PROTOTYPE="prototype"
+
+# flag to use gzip command
+GZIP="false"
+
+# default values of the pkginfo file
+PKG=""
+NAME=""
+VERSION=""
+ARCH=""
+DESC=""
+BASEDIR="/"
+CATEGORY="application"
+VENDOR="unknown"
+
+# default values of the pkgproto file
+NEWUSER="root"
+NEWGROUP="other"
+
+########################################################################
+# usage
+########################################################################
+
+function usage {
+    echo "Usage of $0"
+    echo "> $0 output [-g] [-user <username>] [-group <group>]"
+    echo "             -p <pkg> -n <name> -v <version> -a <arch> [-c <category>]"
+    echo "            [-b <basedir>] [-d <description>] [-vd <vendor>] [-o <flag>...]"
+    echo
+    echo "  output             : output file name"
+    echo 
+    echo "  [Details of Option]"
+    echo "  -g                 : create gzipped package"
+    echo "  -p  <pkg>          : package name (ex. SUNWgcc)"
+    echo "  -n  <name>         : application name (ex. gcc)"
+    echo "  -v  <version>      : application version (ex. 4.2.0)"
+    echo "  -a  <arch>         : architecuture, i86pc,sun4u..."
+    echo "  -c  <category>     : category of the application (ex. system, application, GNOME2)"
+    echo "                       (default = appilcation)"
+    echo "  -b  <basedir>      : base directory of the application (default = /)"
+    echo "  -d  <description>  : package description"
+    echo "  -vd <vendor>       : vendor name (default = unknown)"
+    echo "  -o  <flag>         : if you want to add other flags, please use it"
+    echo "                       (ex. -o \"SUMW_PRODNAME=SunOS\" -o \"SUNW_PRODVERS=5.10\""
+    echo
+    exit 1;
+}
+
+
+########################################################################
+# option check
+########################################################################
+
+OUTPUT=$1
+
+num=0
+
+while [ "$1" != "" ] ; do
+  if [ "$1" == "-help" -o "$1" == "--help" -o "$1" == "-h" ]; then
+    usage
+  elif [ "$1" == "-p" ]; then
+    if [ "$2" != "" ]; then
+      PKG=$2;
+      shift 1;
+      if [ -a $PKG ]; then
+        echo the file or directory named \"$PKG\" already exists.
+        echo operation terminated...
+        exit 2;
+      fi
+    fi
+  elif [ "$1" == "-n" ]; then
+    if [ "$2" != "" ]; then
+      NAME=$2;
+      shift 1;
+    fi
+  elif [ "$1" == "-v" ]; then
+    if [ "$2" != "" ]; then
+      VERSION=$2;
+      shift 1;
+    fi
+  elif [ "$1" == "-a" ]; then
+    if [ "$2" != "" ]; then
+      ARCH=$2;
+      shift 1;
+    fi
+  elif [ "$1" == "-d" ]; then
+    if [ "$2" != "" ]; then
+      DESC=$2;
+      shift 1;
+    fi
+  elif [ "$1" == "-b" ]; then
+    if [ "$2" != "" ]; then
+      BASEDIR=$2;
+      shift 1;
+    fi
+  elif [ "$1" == "-c" ]; then
+    if [ "$2" != "" ]; then
+      CATEGORY=$2;
+      shift 1;
+    fi
+  elif [ "$1" == "-vd" ]; then
+    if [ "$2" != "" ]; then
+      VENDOR=$2;
+      shift 1;
+    fi
+  elif [ "$1" == "-o" ]; then
+    if [ "$2" != "" ]; then
+      OPTION[${num}]=$2;
+      let num="${num} + 1"
+      shift 1;
+    fi
+  elif [ "$1" == "-g" ]; then
+    GZIP="true"
+  elif [ "$1" == "-user" ]; then
+    if [ "$2" != "" ]; then
+      NEWUSER=$2;
+      shift 1;
+    fi
+  elif [ "$1" == "-group" ]; then
+    if [ "$2" != "" ]; then
+      NEWGROUP=$2;
+      shift 1;
+    fi
+  fi
+    shift 1;
+done
+
+
+########################################################################
+# mandatory variable heck
+########################################################################
+
+# error flag
+ERROR="false"
+
+# output filename
+if [ "$OUTPUT" == "" ]; then
+  usage
+fi
+
+# pkg name
+if [ "$PKG" == "" ]; then
+  ERROR="true"
+  echo "package name is null. please set by -p option."
+fi
+
+# appilcation name
+if [ "$NAME" == "" ]; then
+  ERROR="true"
+  echo "application name is null. please set by -n option."
+fi
+
+# version
+if [ "$VERSION" == "" ]; then
+  ERROR="true"
+  echo "version is null. please set by -v option."
+fi
+
+# architecture
+if [ "$ARCH" == "" ]; then
+  ERROR="true"
+  echo "archtecture information is null. please set by -a option."
+fi
+
+# call usage and exit
+if [ "$ERROR" == "true" ]; then
+  echo
+  usage
+fi
+
+
+########################################################################
+# delete configuration files for pkgs
+########################################################################
+
+if [ -f $PKGINFO ]; then
+  echo delete $PKGINFO
+  rm $PKGINFO
+fi
+
+
+########################################################################
+# create a pkginfo file
+########################################################################
+
+echo
+
+# create pkginfo
+
+OPTION_EXEC=""
+
+if [ "$DESC" != "" ]; then
+  OPTION_EXEC="-d $DESC"
+fi
+
+counter=0
+while [  $counter -lt $num ]; do
+  OPTION_EXEC="$OPTION_EXEC -o \"${OPTION[${counter}]}\""
+  let counter="${counter} + 1"
+done
+
+echo $VENDOR
+echo OPTION_EXEC $OPTION_EXEC
+
+echo create pkginfo file...
+
+${MKPINFO} $OUTPUT \
+  -p "$PKG" \
+  -n "$NAME" \
+  -v "$VERSION" \
+  -a "$ARCH" \
+  -c "$CATEGORY" \
+  -b "$BASEDIR" \
+  -vd "$VENDOR" \
+  $OPTION_EXEC 
+
+# create prototype
+
+echo create prototype file...
+
+${MKPROTO} -u $NEWUSER -g $NEWGROUP
+
+
+# create package
+
+/usr/bin/pkgmk -r . -d .
+
+# pkgtrans
+
+/usr/bin/pkgtrans -s . $OUTPUT $PKG
+
+# gzip
+
+if [ "$GZIP" == "true" ]; then
+/usr/bin/gzip $OUTPUT
+fi
+
+# message
+echo
+echo "done."
+exit 0;
+
+

@@ -1,0 +1,8 @@
+This software consists of 3 components, each component with a distinct
+license represented below. By selecting the "accept" button, you are
+accepting the terms of all the licenses for the software.
+
+1) JRE License
+2) Java 3D License
+3) Project Looking Glass License
+

@@ -1,0 +1,22 @@
+<!-- Rules and targets for building X11 -->
+<project basedir="." default="..." name="build-awt">
+    <dirname property="imported.basedir" file="${ant.file.build-setup}"/>
+    
+    <target name="clean-awt" description="Clean lg3d-awt project"
+        if="awt.exists">
+        <ant inheritAll="false" dir="${awt.dir}" target="clean"/>
+    </target>
+
+    <target name="jar-awt" description="Build and jar lg3d-awt project"
+	    depends="init" if="awt.exists">
+	<property name="awt.build.platform.dir" value="${awt.dir}/build/${build.location}"/>
+        <ant inheritAll="false" dir="${awt.dir}" target="jar">
+            <property name="classpath" value="${build.classes.dir}"/>
+            <property name="build.platform.dir" value="${awt.build.platform.dir}"/>
+            <property name="build.debug" value="${build.debug}"/>
+        </ant>
+        <copy todir="${build.lib.dir}" failonerror="false">
+            <fileset dir="${awt.build.platform.dir}/lib/"/>
+        </copy>
+    </target>
+</project>

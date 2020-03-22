@@ -1,0 +1,16 @@
+gnu.app
+gnu.app.displayhack
+gnu.app.displayhack.eraser
+gnu.app.glxdemo
+gnu.app.puppet
+gnu.app.redbook
+gnu.util
+gnu.x11
+gnu.x11.event
+gnu.x11.extension
+gnu.x11.extension.glx
+gnu.x11.extension.render
+gnu.x11.image
+gnu.x11.keysym
+gnu.x11.test
+gnu.x11.tk

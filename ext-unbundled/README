@@ -1,0 +1,7 @@
+Optional jar files for loaders etc should be placed here.
+Also if you compile the lg3d-x11 project the results will be installed
+in this directory and will override the installation in ext/lg3d-x11
+
+If junit.jar is placed in this folder the junit tests will be compiled
+
+

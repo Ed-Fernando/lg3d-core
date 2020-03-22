@@ -1,0 +1,178 @@
+<project basedir="." default="..." name="build-setup">
+    <dirname property="imported.basedir" file="${ant.file.build-setup}"/>
+
+    <!-- Suck in all the environment variables (prefixed by env) -->
+    <property environment="env"/>
+
+    <!-- Give exec perms to all scripts in the tools/devscripts dirs -->
+    <chmod dir="${build-tools.dir}" perm="a+rx" includes="*.sh"/>
+    <chmod dir="${scripts.dir}" perm="a+rx" includes="*"/>
+    
+    <!--
+	Are we building on Java6 or Java5 platform ?
+	We need to distinguish this mainly for the AWT toolkit
+    -->
+    <available classname="java.io.Console" property="build.java6"/>
+    <if>
+	<isset property="build.java6"/>
+	<then>
+	    <property name="javasrc.vmspecific.dir" value="${src.dir}/classes6"/>
+	    <available property="awt.exists" file="${awt.dir}"/>
+	</then>
+	<else>
+	    <property name="javasrc.vmspecific.dir" value="${src.dir}/classes5"/>
+
+	    <!--
+		Currently the AWT toolkit and the X stuff doesnt build on
+		JDK 1.5 - So disable them so that the rest can build properly
+	    -->
+	    <property name="build.awt.toolkit" value="false"/>
+	    <property name="nox11" value="true"/>
+	</else>
+    </if>
+
+    <available property="demoapps.exists" file="${demoapps.dir}"/>
+    <available property="incubator.exists" file="${incubator.dir}"/>
+    <available property="wonderland.exists" file="${wonderland.dir}"/>
+
+    <!-- lg3d-core ext dir -->
+    <property name="core.ext.dir" location="${core.dir}/ext"/>
+    
+    <!-- lg3d-core ext and incubator jars -->
+    <fileset dir="${core.ext.dir}" id="core.ext.jars">
+	<include name="**/*.jar"/>
+	<exclude name="odejava.jar"/>
+	<exclude name="nwn-0.7.jar"/>
+    </fileset>
+    <pathconvert property="core.ext.classpath" refid="core.ext.jars" />
+
+    <!-- Do platform specific setup -->
+    <import file="${imported.basedir}/platform-setup.xml"/>
+
+    <!-- 
+	To better support daily builds on multiple architectures and OS'es
+	the platformBuild flag will cause the build files to go into platform
+	specific directories. This is not used in the general case as IDE's
+	can't deal with architecture info in the classpath etc
+    -->
+    <property name="build.platform" value="${ostype}-${arch}"/>
+    <condition property="build.location"
+	       value="${build.platform}/${build.level}"
+	       else="current/${build.level}">
+	<istrue value="${platformBuild}"/>
+    </condition>
+    <property name="build.platform.dir" value="${build.dir}/${build.location}"/>
+    <property name="build.classes.dir" location="${build.platform.dir}/classes"/>
+    <property name="build.lib.dir" location="${build.platform.dir}/lib"/>
+    <property name="build.log.file" location="${build.platform.dir}/build-log.txt"/>
+
+    <!-- Release related defines -->
+    <property name="release.dir" location="${current.dir}/release/${build.platform}/${build.level}"/>
+    <property name="release.dir.lg3d" location="${release.dir}/lg3d"/>
+    <property name="release.javadoc.dir" location="${release.dir.lg3d}/docs/javadoc"/>
+    <property name="release.x11.dir" location="${release.dir.lg3d}/lib/${ostype}-${arch}/lg3d-x11"/>
+    <property name="release.platform.lib" location="${release.dir.lg3d}/lib"/>
+    <property name="release.platform.bin" location="${release.dir.lg3d}/bin"/>
+    <property name="release.platform.ext" location="${release.dir.lg3d}/ext"/>
+    <property name="release.platform.doc" location="${release.javadoc.dir}"/>
+
+    <tstamp>
+	<format property="build.stamp" pattern="yyMMddHHmm"/>
+	<format property="build.date" pattern="kk:mm zzz dd MMM yyyy"/>
+    </tstamp>
+
+    <!-- lg3d-core classes dir -->
+    <property name="core.lib.dir" location="${core.dir}/build/${build.location}/lib"/>
+
+    <!-- Do X11 related setup -->
+    <import file="${imported.basedir}/x11-setup.xml"/>
+
+    <!-- If building in verbose mode, echo important build properties... -->
+    <if>
+	<and>
+	    <istrue value="${build.verbose}"/>
+	    <not> <isset property="${build-setup.echoed}"/> </not>
+	</and>
+	<then>
+	    <echo message="project-name = ${project.name}"/>
+	    <echo message="ostype = ${ostype}"/>
+	    <echo message="arch = ${arch}"/>
+	    <echo message="javasrc.vmspecific.dir = ${javasrc.vmspecific.dir}"/>
+	    <echo message="build.platform.dir = ${build.platform.dir}"/>
+	    <echo message="platform-supports-x = ${platform-supports-x}"/>
+	    <echo message="build.awt.toolkit = ${build.awt.toolkit}"/>
+	    <echo message="build.x11 = ${build.x11}"/>
+	    <if>
+		<istrue value="${build.x11}"/>
+		<then>
+		    <echo message="x11.source.dir = ${x11.source.dir}"/>
+		    <echo message="x11.dest.dir = ${x11.dest.dir}"/>
+		</then>
+	    </if>
+
+	    <property name="${build-setup.echoed}" value="true"/>
+	</then>
+    </if>
+
+    <if>
+	<istrue value="${wonderland.exists}"/>
+	<then>
+	    <property name="javaext.dir" location="${wonderland.dir}/ext"/>
+	    <property name="os.javaext.dir" location="${javaext.dir}/${ostype}"/>
+
+	    <property name="zip.javaext.dir" location="${javaext.dir}/zip"/>
+	    <property name="os.zip.javaext.dir" location="${zip.javaext.dir}/${ostype}"/>
+
+	    <property name="native.javaext.dir" location="${os.javaext.dir}/native"/>
+	    <property name="jars.javaext.dir" location="${os.javaext.dir}/jars"/>   <!-- Platform specific jars -->
+
+	    <property name="common.javaext.dir" location="${javaext.dir}/common"/>  <!-- Platform independant jars -->
+
+	    <property name="sgs.javaext.dir" location="${javaext.dir}/sgs/darkstar"/>
+	    <property name="sgs.lib.dir" location="${sgs.javaext.dir}/lib"/>
+
+	    <!-- Jars needed to use Java3d-->
+	    <pathconvert property="j3d.classpath">
+		<path location="${jars.javaext.dir}/j3dcore.jar"/>
+		<path location="${jars.javaext.dir}/j3dutils.jar"/>
+		<path location="${jars.javaext.dir}/vecmath.jar"/>
+		<path location="${core.ext.dir}/j3d-contrib-utils.jar"/>
+	    </pathconvert>
+
+	    <!-- All other jars in the ext dir -->
+	    <pathconvert property="javaext.classpath">
+		<path location="${os.javaext.dir}"/>
+		<path location="${jars.javaext.dir}"/>
+
+		<!-- JMF, Fobs4JMF -->
+		<path location="${jars.javaext.dir}/jmf.jar"/>
+		<path location="${jars.javaext.dir}/mediaplayer.jar"/>
+		<path location="${jars.javaext.dir}/fobs4jmf.jar"/>
+
+		<!-- JOAL + JOGL -->
+		<path location="${jars.javaext.dir}/joal.jar"/>
+		<path location="${jars.javaext.dir}/jogl.jar"/>
+		<path location="${jars.javaext.dir}/gluegen-rt.jar"/>
+
+		<!-- JAI -->
+		<path location="${jars.javaext.dir}/jai_core.jar"/>
+		<path location="${jars.javaext.dir}/jai_codec.jar"/>
+		<path location="${jars.javaext.dir}/mlibwrapper_jai.jar"/>
+
+		<!-- JAI-IMAGEIO -->
+		<path location="${jars.javaext.dir}/jai_imageio.jar"/>
+		<path location="${jars.javaext.dir}/clibwrapper_jiio.jar"/>
+
+		<!-- JInput-->
+		<path location="${jars.javaext.dir}/jinput.jar"/>
+	    </pathconvert>
+	</then>
+	<else>
+	    <property name="native.javaext.dir" value=""/>
+	</else>
+    </if>
+
+    <property name="env.path.defvalue" value="${env.path.value}:${native.javaext.dir}:${escher.lib.dir}:${core.lib.dir}/${ostype}-${arch}:${yjp.home}/bin/${yjp.platform.dir}"/>
+
+    <import file="${imported.basedir}/build-unpack.xml"/>
+</project>

@@ -1,0 +1,201 @@
+#!/usr/bin/bash -f
+########################################################################
+# mkpinfo
+# script to make pkginfo file of Solaris pkg
+########################################################################
+
+########################################################################
+# initialize variables
+########################################################################
+
+# pkginfo file
+PKGINFO="pkginfo"
+
+# default values of the pkginfo file
+PKG=""
+NAME=""
+VERSION=""
+ARCH=""
+DESC=""
+BASEDIR="/"
+CATEGORY="application"
+VENDOR="unknown"
+
+########################################################################
+# usage
+########################################################################
+
+function usage {
+    echo "Usage of $0"
+    echo "> $0 -p <pkg> -n <name> -v <version> -a <arch> [-c <category>]"
+    echo "             [-b <basedir>] [-d <description>] [-vd <vendor>] [-o <flag>...]"
+    echo
+    echo  "[Details of Option]"
+    echo  "-p  <pkg>          : package name (ex. SUNWgcc)"
+    echo  "-n  <name>         : application name (ex. gcc)"
+    echo  "-v  <version>      : application version (ex. 4.2.0)"
+    echo  "-a  <arch>         : architecuture, i86pc,sun4u..."
+    echo  "-c  <category>     : category of the application (ex. system, application, GNOME2)"
+    echo  "                     (default = appilcation)"
+    echo  "-b  <basedir>      : base directory of the application (default = /)"
+    echo  "-d  <description>  : package description"
+    echo  "-vd <vendor>       : vendor name (default = unknown)"
+    echo  "-o  <flag>         : if you want to add other flags, please use it"
+    echo  "                     (ex. -o \"SUMW_PRODNAME=SunOS\" -o \"SUNW_PRODVERS=5.10\""
+    echo
+    exit 1;
+}
+
+
+########################################################################
+# option check
+########################################################################
+
+num=0
+
+while [ "$1" != "" ] ; do
+  if [ "$1" == "-help" -o "$1" == "--help" -o "$1" == "-h" ]; then
+    usage
+  elif [ "$1" == "-p" ]; then
+    if [ "$2" != "" ]; then
+      PKG=$2;
+      shift 1;
+    fi
+  elif [ "$1" == "-n" ]; then
+    if [ "$2" != "" ]; then
+      NAME=$2;
+      shift 1;
+    fi
+  elif [ "$1" == "-v" ]; then
+    if [ "$2" != "" ]; then
+      VERSION=$2;
+      shift 1;
+    fi
+  elif [ "$1" == "-a" ]; then
+    if [ "$2" != "" ]; then
+      ARCH=$2;
+      shift 1;
+    fi
+  elif [ "$1" == "-d" ]; then
+    if [ "$2" != "" ]; then
+      DESC=$2;
+      shift 1;
+    fi
+  elif [ "$1" == "-b" ]; then
+    if [ "$2" != "" ]; then
+      BASEDIR=$2;
+      shift 1;
+    fi
+  elif [ "$1" == "-c" ]; then
+    if [ "$2" != "" ]; then
+      CATEGORY=$2;
+      shift 1;
+    fi
+  elif [ "$1" == "-vd" ]; then
+    if [ "$2" != "" ]; then
+      VENDOR=$2;
+      shift 1;
+    fi
+  elif [ "$1" == "-o" ]; then
+    if [ "$2" != "" ]; then
+      OPTION[${num}]=$2;
+      let num="${num} + 1"
+      shift 1;
+    fi
+  fi
+    shift 1;
+done
+
+
+########################################################################
+# mandatory variable heck
+########################################################################
+
+# error flag
+ERROR="false"
+
+# pkg name
+if [ "$PKG" == "" ]; then
+  ERROR="true"
+  echo "package name is null. please set by -p option."
+fi
+
+# appilcation name
+if [ "$NAME" == "" ]; then
+  ERROR="true"
+  echo "application name is null. please set by -n option."
+fi
+
+# version
+if [ "$VERSION" == "" ]; then
+  ERROR="true"
+  echo "version is null. please set by -n option."
+fi
+
+# architecture
+if [ "$ARCH" == "" ]; then
+  ERROR="true"
+  echo "archtecture information is null. please set by -n option."
+fi
+
+# call usage and exit
+if [ "$ERROR" == "true" ]; then
+  echo
+  usage
+fi
+
+
+########################################################################
+# delete configuration files for pkgs
+########################################################################
+
+if [ -f $PKGINFO ]; then
+  echo delete $PKGINFO
+  rm $PKGINFO
+fi
+
+
+########################################################################
+# create a pkginfo file
+########################################################################
+
+# message
+echo create pkginfo 
+echo
+echo ====
+echo "PKG=$PKG"
+echo "NAME=$NAME"
+echo "VERSION=$VERSION"
+echo "ARCH=$ARCH" 
+echo "DESC=$DESC"
+echo "BASEDIR=$BASEDIR"
+echo "CATEGORY=$CATEGORY" 
+echo "VENDOR=$VENDOR" 
+
+# creating pkginfo
+echo "PKG=$PKG" > $PKGINFO
+echo "NAME=$NAME" >> $PKGINFO
+echo "VERSION=$VERSION" >> $PKGINFO
+echo "ARCH=$ARCH" >> $PKGINFO
+echo "DESC=$DESC" >> $PKGINFO
+echo "BASEDIR=$BASEDIR" >> $PKGINFO
+echo "CATEGORY=$CATEGORY" >> $PKGINFO
+echo "VENDOR=$VENDOR" >> $PKGINFO
+
+
+counter=0
+while [  $counter -lt $num ]; do
+  echo ${OPTION[${counter}]}
+  echo ${OPTION[${counter}]} >> $PKGINFO
+  let counter="${counter} + 1"
+done
+
+
+
+# message
+echo ====
+echo
+echo "done."
+exit 0;
+
+

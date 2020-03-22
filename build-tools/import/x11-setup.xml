@@ -1,0 +1,77 @@
+<project basedir="." default="..." name="x11-setup">
+    <!--
+	Setup x11 specific properties
+	Assumes that platform-setup has already been done.
+    -->
+    <if>
+	<istrue value="${platform-supports-x}"/>
+	<then>
+	    <property name="x11.source.dir" location="../lg3d-x11/${ostype}/${arch}"/>
+	    <property name="x11.source.file" location="${x11.source.dir}/lg3d-x11.tar.gz"/>
+	    <if>
+		<isfalse value="${nox11}"/>
+		<then>
+		    <available property="x11.exists" file="${x11.source.file}"/>
+		</then>
+	    </if>
+	</then>
+    </if>
+
+    <if>
+	<istrue value="${x11.exists}"/>
+	<then>
+	    <property name="build.x11" value="true"/>
+	    <property name="x11.dest.dir" location="${build.platform.dir}/lib/${ostype}-${arch}"/>
+	    <property name="x11-compat.properties" location="${build.platform.dir}/lg3d-x11-compat.properties"/>
+	</then>
+	<else>
+	    <property name="build.x11" value="false"/>
+	    <property name="x11.dest.dir" value="*** NO X11 BUILD ***"/>
+	</else>
+    </if>
+
+    <if>
+	<istrue value="${build.awt.toolkit}"/>
+	<then>
+	    <if>
+		<istrue value="${platform-supports-x}"/>
+		<then>
+		    <property name="awt.toolkit" value="org.jdesktop.lg3d.awt.xlg3dtoolkit"/>
+                    <property name="awt.toolkit.x" value="true"/>
+                </then>
+		<else>
+                    <switch value="${ostype}">
+                        <case value="win32">
+                            <property name="awt.toolkit" value="org.jdesktop.lg3d.awt.wlg3dtoolkit"/>
+                            <property name="awt.toolkit.windows" value="true"/>
+                        </case>
+                        <case value="macosx">
+                            <property name="awt.toolkit" value="org.jdesktop.lg3d.awt.mlg3dtoolkit"/>
+                            <property name="awt.toolkit.mac" value="true"/>
+                        </case>
+                    </switch>
+		</else>
+	    </if>
+	    <property name="lg.use3dtoolkit" value="true"/>
+
+	    <propertyset id="awt.toolkit.properties">
+		<propertyref name="awt.toolkit"/>
+		<propertyref name="lg.use3dtoolkit"/>
+	    </propertyset>
+
+	    <pathconvert property="awt.toolkit.bootclasspath">
+		<path location="${build.lib.dir}/lg3d-awt-toolkit.jar"/>
+	    </pathconvert>
+	</then>
+	<else>
+	    <property name="awt.toolkit.excludes" value="org/jdesktop/lg3d/awt*/**"/>
+	    <property name="lg.use3dtoolkit" value="false"/>
+
+	    <propertyset id="awt.toolkit.properties">
+		<propertyref name="lg.use3dtoolkit"/>
+	    </propertyset>
+
+	    <path id="awt.toolkit.bootclasspath" />
+	</else>
+    </if>
+</project>

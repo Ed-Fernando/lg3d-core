@@ -1,0 +1,167 @@
+####################################################################################
+#                       Template NSIS script for LG3D.                             #
+####################################################################################
+#                          Petr Sickboy Hejl, 2005                                 #
+####################################################################################
+
+# filled from ant script
+!define releasedir "@RELEASE_DIR@"
+
+!define runtime "@RUNTIME_DIR@"
+
+!define scripts "@LG3D_SCRIPTS@"
+!define release "@LG3D_RELEASE@"
+!define version "@LG3D_VERSION@"
+
+# group of products
+!define group "Project Looking Glass"
+ 
+!define shortprodname "LG3D Project"
+!define prodname "${shortprodname} ${version}"
+!define executable "bin\lg3d-run.bat"
+
+# installer filename
+!define setup "${release}\@LG3D_INSTALL@-setup.exe"
+
+# working directory for shortcut
+!define workingdir "bin"
+ 
+# lg3d license file
+!define licensefile "@LG3D_LICENSE@"
+
+# website url
+!define website "https://lg3d.dev.java.net/"
+
+# registry items 
+!define regkey "Software\${group}\${prodname}"
+!define uninstkey "Software\Microsoft\Windows\CurrentVersion\Uninstall\${prodname}"
+ 
+# start menu
+!define startmenu "$SMPROGRAMS\${prodname}"
+
+# uninstaller filename
+!define uninstaller "uninstall.exe"
+
+####################################################################################
+#                             CONFIGURE PARAMETERS                                 #
+####################################################################################
+
+SetCompressor /SOLID lzma
+SetDateSave on
+SetDatablockOptimize on
+CRCCheck on
+SilentInstall normal
+XPStyle on
+ShowInstDetails show
+ShowUninstDetails hide
+AutoCloseWindow false
+
+Name "${prodname}"
+Caption "${prodname}"
+OutFile "${setup}"
+ 
+InstallDir "$PROGRAMFILES\${group}\${prodname}"
+InstallDirRegKey HKLM "${regkey}" ""
+ 
+LicenseText "License"
+LicenseData "${licensefile}"
+
+Page license
+Page directory
+Page instfiles
+ 
+UninstPage uninstConfirm
+UninstPage instfiles
+ 
+####################################################################################
+#                                INSTALLATION PART                                 #
+####################################################################################
+
+# installation itself
+Section "Basic Installation"
+ 
+  SectionIn RO
+
+  # installation path
+  WriteRegStr HKLM "${regkey}" "Install_Dir" "$INSTDIR"
+
+  # uninstaller regkeys
+  WriteRegStr HKLM "${uninstkey}" "DisplayName" "${prodname} (remove only)"
+  WriteRegStr HKLM "${uninstkey}" "UninstallString" '"$INSTDIR\${uninstaller}"'
+  
+  # uninstaller remove only
+  WriteRegDWORD HKLM "${uninstkey}" "NoModify" 1
+  WriteRegDWORD HKLM "${uninstkey}" "NoRepair" 1
+
+  SetOutPath "$INSTDIR"
+ 
+  # license file
+  File /a "${licensefile}"
+ 
+  # lg3d application-specific files
+  # SetOutPath "$INSTDIR\docs"
+  # File /a /r "${releasedir}\docs\*"
+  SetOutPath "$INSTDIR\etc"
+  File /a /r "${releasedir}\etc\*"
+  SetOutPath "$INSTDIR\ext"
+  File /a /r "${releasedir}\ext\*"
+  SetOutPath "$INSTDIR\ext-unbundled"
+  File /a /r "${releasedir}\ext-unbundled\*"
+  SetOutPath "$INSTDIR\lib"
+  File /a /r "${releasedir}\lib\*"
+  SetOutPath "$INSTDIR\resources"
+  File /a /r "${releasedir}\resources\*"
+  
+  # script files
+  SetOutPath "$INSTDIR\bin"
+  File /a "${releasedir}\bin\lg3d-dev.bat"
+  File /a "${releasedir}\bin\setup.bat"
+  File /a "${scripts}\lg3d-run.bat"
+  File /a "${scripts}\README.txt"
+
+  # jre files
+  SetOutPath "$INSTDIR\jre"
+  File /a /r "${runtime}\*"
+
+  SetOutPath "$INSTDIR"
+
+  WriteUninstaller "${uninstaller}"
+  
+SectionEnd
+ 
+# shortcuts
+Section "Start Menu Shortcuts"
+  
+  CreateDirectory "${startmenu}"
+  SetOutPath "$INSTDIR\${workingdir}"
+
+  CreateShortCut "${startmenu}\Start ${prodname}.lnk" "$INSTDIR\${executable}"
+  CreateShortCut "${startmenu}\Uninstall ${prodname}.lnk" "$INSTDIR\${uninstaller}"
+
+  WriteINIStr "${startmenu}\Website of ${shortprodname}.url" "InternetShortcut" "URL" ${website}
+  # CreateShortCut "${startmenu}\${shortprodname} Website.lnk" "${website}" "URL"
+
+SectionEnd
+ 
+####################################################################################
+#                               UNINSTALLATION PART                                #
+####################################################################################
+ 
+UninstallText "This will uninstall ${prodname}."
+ 
+Section "Uninstall"
+ 
+  DeleteRegKey HKLM "${uninstkey}"
+  DeleteRegKey HKLM "${regkey}"
+  
+  Delete "${startmenu}\Start ${prodname}.lnk"
+  Delete "${startmenu}\Uninstall ${prodname}.lnk"
+
+  Delete "${startmenu}\Website of ${shortprodname}.url"
+
+  RMDir "${startmenu}"
+
+  RMDir /r "$INSTDIR"
+  RMDir "$PROGRAMFILES\${group}"
+ 
+SectionEnd

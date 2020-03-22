@@ -1,0 +1,253 @@
+<!-- Rules and targets for building X11 -->
+<project basedir="." default="..." name="build-x11">
+
+    <!-- X11 version compatibility test -->
+    <target name="x11-compatibility-test">
+        <exec executable="${build-tools.dir}/lg3d-x11-is-compatible.sh"
+		output="${x11-compat.properties}">
+            <arg line="${core.ext.dir} ${x11.source.dir}"/>
+        </exec>
+        <property file="${x11-compat.properties}"/>
+
+	<if>
+	    <istrue value="${lg3d-x11-is-not-compatible}"/>
+	    <then>
+		<echo message="The X11 build in ${x11.source.dir} is incompatible with what this lg3d-core requires."/>
+		<echo message="${lg3d-x11-error}"/>
+		<fail message="Build aborted"/>
+	    </then>
+	</if>
+    </target>
+
+    <target name="x11-check-and-unpack" if="build.x11">
+        <antcall target="x11-compatibility-test"/>
+        <uptodate property="x-unpack-done"
+		  srcfile="${x11.source.file}" targetfile="${x11.dest.dir}"/>
+        <antcall target="unpack-x"/>
+    </target>
+
+    <target name="unpack-x" description="Unpack X server" unless="x-unpack-done">
+        <mkdir dir="${x11.dest.dir}"/>
+        <untar src="${x11.source.file}" dest="${x11.dest.dir}"
+	       overwrite="true" compression="gzip"/>
+        <chmod dir="${x11.dest.dir}/lg3d-x11/programs/Xserver" perm="a+rx" includes="*"/>
+
+        <!-- Touch the directory so it's more recent than than the tar-->
+        <touch>
+            <fileset dir="${x11.dest.dir}"/>
+        </touch>
+    </target>
+
+    <target name="init-x11" depends="init" unless="nox11" description="Initial set-up (include X11)">
+        <antcall target="x11-check-and-unpack"/>
+
+        <property name="x11.native.dir"
+        value="${src.dir}/native/org/jdesktop/lg3d/displayserver/fws/x11"/>
+
+        <!-- Allow the X libraries we use to be overridden by x11.lg3d.home -->
+        <property name="x11.lg3d.dir" value="${x11.dest.dir}/lg3d-x11"/>
+
+	<if>
+            <equals arg1="${ostype}" arg2="linux"/>
+	    <then>
+		<property name="x11.cc" value="gcc"/>
+		<property name="x11.ldflags" value="-shared"/>
+		<property name="x11.dso.ldflags" value="-shared -z lazyload"/>
+		<property name="x11.dso.defines" value="-w -D__linux__ -fPIC"/>
+	    </then>
+	    <else>
+		<property name="x11.cc" value="cc"/>
+		<property name="x11.ldflags" value="-Bdynamic -xF -G"/>
+		<property name="x11.dso.ldflags" value="-Bdynamic -xF -G"/>
+		<property name="x11.dso.defines" value="-w -DSOLARIS"/>
+	    </else>
+	</if>
+
+        <property name="x11.includes"
+		  value="-I. -I${x11.lg3d.dir}/exports/include -I${java.home}/../include -I${java.home}/../include/${ostype}"/>
+
+        <property name="x11.dso.includes"
+		  value="-I. -I${x11.lg3d.dir}/include -I${java.home}/../include -I${java.home}/../include/${ostype}"/>
+
+        <property name="x11.libs"
+		  value="-L${x11.lg3d.dir}/exports/lib -lX11 -lXext -lc"/>
+
+	<if>
+            <equals arg1="${arch}" arg2="x86_64"/>
+	    <then>
+		<property name="x11.dso.libs"
+			  value="-L${java.home}/lib/amd64 -ljawt -L${java.home}/lib/amd64/server -ljvm"/>
+		<property name="x11.defines" value="-w -fPIC"/>
+	    </then>
+	    <else>
+		<property name="x11.dso.libs"
+			  value="-L${java.home}/lib/i386 -ljawt -L${java.home}/lib/i386/server -ljvm"/>
+		<property name="x11.defines" value="-w"/>
+	    </else>
+	</if>
+
+	<if>
+	    <istrue value="${build.verbose}"/>
+	    <then>
+		<echo message="x11.lg3d.dir = ${x11.lg3d.dir}"/>
+		<echo message="x11.native.dir = ${x11.native.dir}"/>
+		<echo message="x11.cc = ${x11.cc}"/>
+		<echo message="x11.defines = ${x11.defines}"/>
+		<echo message="x11.includes = ${x11.includes}"/>
+		<echo message="x11.libs = ${x11.libs}"/>
+		<echo message="x11.ldflags = ${x11.ldflags}"/>
+		<echo message="x11.dso.defines = ${x11.dso.defines}"/>
+		<echo message="x11.dso.includes = ${x11.dso.includes}"/>
+		<echo message="x11.dso.libs = ${x11.dso.libs}"/>
+		<echo message="x11.dso.ldflags = ${x11.dso.ldflags}"/>
+	    </then>
+	</if>
+    </target>
+
+    <target name="compile-fws-x11" description="Build FWS X11 Java components"
+        depends="init" unless="nox11">
+        <javac debug="true"
+            deprecation="false"
+            destdir="${build.classes.dir}"
+            nowarn="true"
+            source="1.5"
+            sourcepath=""
+            target="1.5">
+            <classpath>
+                <pathelement location="${core.ext.dir}/escher-0.2.2.lg.jar"/>
+                <pathelement location="${build.classes.dir}"/>
+            </classpath>
+            <src path="${javasrc.dir}"/>
+            <include name="org/jdesktop/lg3d/displayserver/fws/x11/**"/>
+        </javac>
+    </target>
+
+    <target name="compile-x11" description="Build X11 integration components"
+        depends="init" if="x11.exists" unless="nox11">
+        <available property="ext.escher" file="${core.ext.dir}/escher-0.2.2.lg.jar"/>
+        <antcall target="check-escher"/>
+        <javac debug="true"
+            deprecation="false"
+            destdir="${build.classes.dir}"
+            nowarn="true"
+            source="1.5"
+            sourcepath=""
+            target="1.5">
+            <classpath>
+		<pathelement path="${j3d.classpath}"/>
+                <pathelement location="${core.ext.dir}/escher-0.2.2.lg.jar"/>
+                <pathelement location="${build.classes.dir}"/>
+            </classpath>
+            <src path="${javasrc.dir}"/>
+            <include name="org/jdesktop/lg3d/displayserver/fws/x11/**"/>
+            <include name="org/jdesktop/lg3d/apps/x11integration/**"/>
+	    <include name="sun/awt/X11/**"/>
+        </javac>
+        <antcall target="native-x11"/>
+    </target>
+
+    <target name="native-x11" depends="init-x11" description="Build X11 native code" unless="nonative">
+        <delete quiet="true">
+            <fileset dir="${x11.native.dir}" includes="*.o,*.so"/>
+            <fileset dir="${x11.native.dir}/dso" includes="*.o"/>
+        </delete>
+
+        <javah class="org.jdesktop.lg3d.displayserver.fws.x11.DamageEventBroker" destdir="${x11.native.dir}">
+            <classpath>
+                <pathelement location="${x11.native.dir}"/>
+                <pathelement location="${build.classes.dir}"/>
+                <pathelement location="${core.ext.dir}/escher-0.2.2.lg.jar"/>
+            </classpath>
+        </javah>
+        <javah class="org.jdesktop.lg3d.displayserver.fws.x11.CookedEventPoller" destdir="${x11.native.dir}">
+            <classpath>
+                <pathelement location="${x11.native.dir}"/>
+                <pathelement location="${build.classes.dir}"/>
+                <pathelement location="${core.ext.dir}/escher-0.2.2.lg.jar"/>
+            </classpath>
+        </javah>
+        <javah class="org.jdesktop.lg3d.displayserver.fws.x11.LightPipeWindow" destdir="${x11.native.dir}">
+            <classpath>
+                <pathelement location="${x11.native.dir}"/>
+                <pathelement location="${build.classes.dir}"/>
+                <pathelement location="${core.ext.dir}/escher-0.2.2.lg.jar"/>
+            </classpath>
+        </javah>
+
+        <exec dir="${x11.native.dir}" executable="${x11.cc}">
+            <arg line="CookedEventPoller.c -c ${x11.defines} ${x11.includes}"/>
+        </exec>
+        <exec dir="${x11.native.dir}" executable="${x11.cc}">
+            <arg line="key_xltoe.c -c ${x11.defines} ${x11.includes}"/>
+        </exec>
+        <exec dir="${x11.native.dir}" executable="${x11.cc}">
+            <arg line="${x11.ldflags} ${x11.defines}"/>
+            <arg line="-o libCookedEventPoller.so"/>
+            <arg line="CookedEventPoller.o key_xltoe.o ${x11.libs} -lXfixes"/>
+        </exec>
+        <exec dir="${x11.native.dir}" executable="${x11.cc}">
+            <arg line="DamageEventBroker.c -c ${x11.defines} ${x11.includes}"/>
+        </exec>
+        <exec dir="${x11.native.dir}" executable="${x11.cc}">
+            <arg line="${x11.ldflags} ${x11.defines}"/>
+            <arg line="-o libDamageEventBroker.so"/>
+            <arg line="DamageEventBroker.o"/>
+        </exec>
+        <exec dir="${x11.native.dir}" executable="${x11.cc}">
+            <arg line="LightPipeWindow.c -c ${x11.defines} ${x11.includes}"/>
+        </exec>
+        <exec dir="${x11.native.dir}" executable="${x11.cc}">
+            <arg line="${x11.ldflags} ${x11.defines}"/>
+            <arg line="-o libLightPipeWindow.so"/>
+            <arg line="LightPipeWindow.o ${x11.libs}"/>
+        </exec>
+
+        <mkdir dir="${build.lib.dir}/${ostype}-${arch}"/>
+        <javah class="org.jdesktop.lg3d.displayserver.fws.x11.dso.DrawingSurfaceObjectAWT" destdir="${x11.native.dir}/dso">
+            <classpath>
+                <pathelement location="${x11.native.dir}/dso"/>
+                <pathelement location="${build.classes.dir}"/>
+            </classpath>
+        </javah>
+        <exec dir="${x11.native.dir}/dso" executable="${x11.cc}">
+            <arg line="-c DrawingSurfaceObjectAWT.c ${x11.dso.defines} ${x11.dso.includes}"/>
+        </exec>
+        <exec dir="${x11.native.dir}/dso" executable="${x11.cc}">
+            <arg line="${x11.dso.ldflags} ${x11.dso.defines} -o libdso.so"/>
+            <arg line="DrawingSurfaceObjectAWT.o ${x11.dso.libs}"/>
+        </exec>
+        <move todir="${build.lib.dir}/${ostype}-${arch}">
+            <fileset dir="${x11.native.dir}">
+                <include name="libCookedEventPoller.so"/>
+                <include name="libDamageEventBroker.so"/>
+                <include name="libLightPipeWindow.so"/>
+            </fileset>
+            <fileset dir="${x11.native.dir}/dso" includes="libdso.so"/>
+        </move>
+    </target>
+
+    <target name="check-escher" unless="ext.escher">
+        <fail message="escher-0.2.2.lg.jar file not installed in ext"/>
+    </target>
+
+    <target name="copy-x-related-native-libs" unless="nox11"
+        description="copies X related native libraries" if="x11.exists">
+        <mkdir dir="${release.platform.lib}"/>
+        <copy todir="${release.platform.lib}">
+            <fileset dir="${build.lib.dir}">
+                <include name="*.so"/>
+            </fileset>
+        </copy>
+        <chmod dir="${release.x11.dir}/programs/Xserver" perm="ugo+rx" includes="Xorg,Xvfb"/>
+    </target>
+
+    <target name="fail-if-x11-not-exist" unless="x11.exists">
+        <fail>
+      *** Error ***
+      lg3d-x11 not found:
+      You need to checkout lg3d-x11 in order to complete the release build.
+      See https://lg3d-core.dev.java.net/lg3d-developers-guide.html for details.
+        </fail>
+    </target>
+
+</project>

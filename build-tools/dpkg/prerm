@@ -1,0 +1,2 @@
+#!/bin/bash
+/usr/share/lg3d/bin/remove-lg-from-gdm

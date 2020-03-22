@@ -1,0 +1,42 @@
+<!-- Rules and targets for building X11 -->
+<project basedir="." default="..." name="build-demo-apps">
+    <dirname property="imported.basedir" file="${ant.file.build-setup}"/>
+
+    <target name="clean-demoapps" description="Clean lg3d-demo-apps project"
+        if="demoapps.exists">
+        <ant inheritAll="false" dir="${demoapps.dir}" target="clean"/>
+    </target>
+
+    <target name="jar-demoapps" description="Build and jar lg3d-demo-apps project"
+        depends="init" if="demoapps.exists">
+	<property name="demoapps.build.platform.dir" value="${demoapps.dir}/build/${build.location}"/>
+        <ant inheritAll="false" dir="${demoapps.dir}" target="jar">
+            <property name="classpath" value="${build.classes.dir}"/>
+            <property name="release.dir.lg3d" value="${release.dir.lg3d}"/>
+            <property name="build.platform.dir" value="${demoapps.build.platform.dir}"/>
+            <property name="build.debug" value="${build.debug}"/>
+        </ant>
+        <copy todir="${build.lib.dir}">
+            <fileset dir="${demoapps.build.platform.dir}/lib/"/>
+        </copy>
+    </target>
+
+    <target name="release-demoapps" description="Build and jar lg3d-demo-apps project"
+        depends="init" if="demoapps.exists">
+        <condition property="demoapps.build.platform.dir"
+            value="${demoapps.dir}/build/${build.platform}/${build.level}"
+            else="${demoapps.dir}/build/current/${build.level}">
+            <istrue value="${platformBuild}"/>
+        </condition>
+        <ant inheritAll="false" dir="${demoapps.dir}" target="release-demoapps">
+            <property name="classpath" value="${build.classes.dir}"/>
+            <property name="release.dir.lg3d" value="${release.dir.lg3d}"/>
+            <property name="build.platform.dir" value="${demoapps.build.platform.dir}"/>
+            <property name="build.debug" value="${build.debug}"/>
+        </ant>
+        <copy todir="${build.lib.dir}">
+            <fileset dir="${demoapps.build.platform.dir}/lib/"/>
+        </copy>
+    </target>
+    
+</project>

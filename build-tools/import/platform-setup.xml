@@ -1,0 +1,125 @@
+<project basedir="." default="..." name="platform-setup">
+    <!-- ========== determine platform ========== -->
+    <condition property="system.type" value="windows-x86">
+	<os family="windows" arch="x86"/>
+    </condition>
+
+    <condition property="system.type" value="linux-i386">
+	<os name="linux" arch="i386"/>
+    </condition>
+
+    <condition property="system.type" value="linux-amd64">
+	<os name="linux" arch="amd64"/>
+    </condition>
+
+    <condition property="system.type" value="sunos-x86">
+	<os name="SunOS" arch="x86"/>
+    </condition>
+
+    <condition property="system.type" value="sunos-sparc">
+	<os name="SunOS" arch="sparc"/>
+    </condition>
+
+    <condition property="system.type" value="macos-x86">
+	<os name="Mac OS X" arch="i386"/>
+    </condition>
+
+    <!-- setup platform properties -->
+    <switch value="${system.type}">
+	<!-- TODO: win32 should be renamed as windows -->
+	<case value="windows-x86">
+	    <property name="ostype" value="win32"/>
+	    <property name="arch" value="i686"/>
+
+	    <!-- TODO: Why is the arch i686 but we use i586 here ? -->
+	    <property name="platform" value="windows-i586-${build.comp}"/>
+	    <property name="platform-supports-x" value="false"/>
+	    <property name="platform-src.name" value="windows"/>
+	    <property name="build.awt.toolkit" value="true"/>
+
+	    <property name="sgs.platform.lib" value="win32-x86"/>
+	    <property name="escher.lib.dir" value=""/>
+	    <property name="yjp.platform.dir" value="win32"/>
+
+	    <property name="env.path.name" value="Path"/>
+	    <property name="env.path.value" value="${env.Path}"/>
+	</case>
+
+	<case value="linux-i386">
+	    <property name="ostype" value="linux"/>
+	    <property name="arch" value="i686"/>
+	    <property name="platform-supports-x" value="true"/>
+	    <property name="platform-src.name" value="solaris"/>
+	    <property name="build.awt.toolkit" value="true"/>
+
+	    <property name="sgs.platform.lib" value="linux-x86"/>
+	    <property name="escher.lib.dir" value="${core.ext.dir}/escher/platform/linux/i686/lib"/>
+	    <property name="yjp.platform.dir" value="linux-x86-32"/>
+
+	    <property name="env.path.name" value="LD_LIBRARY_PATH"/>
+	    <property name="env.path.value" value="${env.LD_LIBRARY_PATH}"/>
+	</case>
+
+	<case value="linux-amd64">
+	    <property name="ostype" value="linux"/>
+	    <!-- Emulate i686 build if we are not using a 64-bit jvm -->
+	    <condition property="arch" value="x86_64" else="i686">
+		<or>
+		    <available file="${java.home}/jre/lib/amd64"/>
+		    <available file="${java.home}/lib/amd64"/>
+		</or>
+	    </condition>
+	    <property name="platform-supports-x" value="true"/>
+	    <property name="platform-src.name" value="solaris"/>
+	    <property name="build.awt.toolkit" value="true"/>
+
+	    <property name="sgs.platform.lib" value="linux-x86_64"/>
+	    <property name="escher.lib.dir" value="${core.ext.dir}/escher/platform/linux/x86_64/lib"/>
+	    <property name="yjp.platform.dir" value="linux-amd64"/>
+
+
+	    <property name="env.path.name" value="LD_LIBRARY_PATH"/>
+	    <property name="env.path.value" value="${env.LD_LIBRARY_PATH}"/>
+	</case>
+
+	<case value="sunos-x86">
+	    <property name="ostype" value="solaris"/>
+	    <property name="arch" value="i86pc"/>
+	    <property name="platform-supports-x" value="true"/>
+	    <property name="platform-src.name" value="solaris"/>
+	    <property name="build.awt.toolkit" value="true"/>
+
+	    <property name="sgs.platform.lib" value="solaris-x86"/>
+	    <property name="escher.lib.dir" value="${core.ext.dir}/escher/platform/solaris/i86pc/lib"/>
+	    <property name="yjp.platform.dir" value="solaris-x86-32"/>
+
+	    <property name="env.path.name" value="LD_LIBRARY_PATH"/>
+	    <property name="env.path.value" value="${env.LD_LIBRARY_PATH}"/>
+	</case>
+
+	<case value="macos-x86">
+	    <property name="ostype" value="macosx"/>
+	    <property name="arch" value="i386"/>
+	    <property name="platform-supports-x" value="false"/>
+	    <property name="platform-src.name" value="macosx"/>
+	    <property name="build.awt.toolkit" value="true"/>
+
+	    <property name="sgs.platform.lib" value="macosx-x86"/>
+	    <property name="escher.lib.dir" value=""/>
+	    <property name="yjp.platform.dir" value="mac"/>
+
+	    <property name="env.path.name" value="DYLD_LIBRARY_PATH"/>
+	    <property name="env.path.value" value="${env.DYLD_LIBRARY_PATH}"/>
+        </case>
+
+	<default>
+	    <fail message="Platform ${system.type} not supported!"/>
+	</default>
+    </switch>
+
+    <echo file="${current.dir}/nbproject/nb.properties">
+lg3d.ostype=${ostype}
+lg3d.arch=${arch}
+lg3d.system.type=${system.type}
+    </echo>
+</project>

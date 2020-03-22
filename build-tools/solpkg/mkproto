@@ -1,0 +1,66 @@
+#!/usr/bin/bash -f
+########################################################################
+# mkproto
+# script to make prototype file of Solaris pkg
+########################################################################
+
+########################################################################
+# initialize variables
+########################################################################
+
+PROTOTYPE="prototype"
+PKGINFO="pkginfo"
+
+NEWUSER="root"
+NEWGROUP="other"
+
+########################################################################
+# option check
+########################################################################
+
+while [ "$1" != "" ] ; do
+  if [ "$1" == "-help" -o "$1" == "--help" -o "$1" == "-h" ]; then
+    echo Usage of $0
+    echo \> $0 [Option]
+    echo
+    echo  [Details of Option]
+    echo  "Default    : User = root, Group = other"
+    echo  "-u <user>  : set user"
+    echo  "-g <group> : set group"
+    exit 1;
+  elif [ "$1" == "-u" -o "$1" == "--user" -o "$1" == "-user" ]; then
+    if [ "$2" != "" ]; then
+      NEWUSER=$2;
+      shift 1;
+    fi
+  elif [ "$1" == "-g" -o "$1" == "--group" -o "$1" == "-group" ]; then
+    if [ "$2" != "" ]; then
+      NEWGROUP=$2;
+      shift 1;
+    fi
+  fi
+    shift 1;
+done
+
+########################################################################
+# create prototype file
+########################################################################
+
+echo "making prototype file with user=$NEWUSER and group=$NEWGROUP"
+
+# delete configuration files for pkgs
+
+if [ -f $PROTOTYPE ]; then
+  echo delete old $PROTOTYPE
+  rm $PROTOTYPE
+fi
+
+# create a prototype file
+
+echo "i $PKGINFO" > $PROTOTYPE
+pkgproto . | sed -e "s/$USER $GROUP/$NEWUSER $NEWGROUP/" | grep -v " $PROTOTYPE " | grep -v "$PKGINFO" >> $PROTOTYPE
+
+echo "done."
+exit 0;
+
+

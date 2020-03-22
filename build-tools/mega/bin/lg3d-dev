@@ -1,0 +1,3 @@
+#!/bin/sh
+SCRIPTDIR=`dirname $0`
+${SCRIPTDIR}/../usr/share/lg3d/bin/lg3d-dev $*

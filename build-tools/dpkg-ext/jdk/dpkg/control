@@ -1,0 +1,8 @@
+Package: lg3d-jdk
+Version: 1.6.0+b104
+Priority: Optional
+Architecture: @OS_ARCH@
+Essential: no
+Maintainer: Paul Byrne <Paul.Byrne@sun.com>
+Provides: lg3d-jdk
+Description: Sun Java 2 Platform Standard Edition Development Kit 6 pre-release repackaged as a .deb for use with Project Looking Glass. This is an experimental distribution, currently the following platforms are supported http://java.sun.com/j2se/1.5.0/system-configurations.html

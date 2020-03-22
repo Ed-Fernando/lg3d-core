@@ -1,0 +1,55 @@
+#!/bin/bash -f
+#export JAVA_HOME=/usr/java/lg3d/jre1.5.0_02
+#export PATH="/usr/java/lg3d/jre1.5.0_02/bin:$PATH"
+
+pkill=/usr/bin/pkill
+if [ -x /usr/bin/pkill ]; then
+  pkill=/usr/bin/pkill
+elif [ -x /usr/bin/killall ]; then
+  pkill=/usr/bin/killall
+fi
+
+# User check...
+
+if [ `/usr/bin/id | /usr/bin/grep 'uid=0(root)' | /usr/bin/wc -l` = 0 ]; then
+  echo Only root can execute $0.
+  exit 1;
+fi
+
+# console check
+if [ `/usr/bin/tty | grep tty |  wc -l` -eq 0 ]; then
+  echo "$0 run on tty(console) mode only."
+  echo "Push Ctrl-Alt-F1 key and you can move tty0, and retry."
+  exit 1;
+fi
+
+
+# gdm check...
+if [ `/bin/ps -e | /usr/bin/grep gdm | /usr/bin/wc -l` -gt 0 ]; then
+  echo "gdm is running."
+  echo "To use lg3d-session, it is nesesarry to shutdown gdm."
+  echo "Are you OKAY to shutdown gdm? [y ... shutdown]"
+  read input
+  if [ "$input" = "y" ]; then
+   echo Shutdown gdm ...
+   $pkill gdm
+  else
+   exit 1;
+  fi
+elif [ `/bin/ps -e | /usr/bin/grep X | /usr/bin/wc -l` -gt 0 ]; then
+  echo "X server is running."
+  echo "To use lg3d-session, it is nesesarry to shutdown X server."
+  echo "Are you OKAY to shutdown X? [y ... shutdown]"
+  read input
+  if [ "$input" = "y" ]; then
+   echo Shutdown gdm ...
+   $pkill X
+  else
+   exit 1;
+  fi
+fi
+
+/opt/lg3d/bin/lg3d-session $@
+
+$pkill rmiregistry
+

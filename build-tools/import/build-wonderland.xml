@@ -1,0 +1,89 @@
+<!-- Rules and targets for building X11 -->
+<project basedir="." default="..." name="build-wonderland">
+    <dirname property="imported.basedir" file="${ant.file.build-setup}"/>
+
+    <target name="clean-wonderland" description="Clean lg3d-wonderland project"
+        if="wonderland.exists">
+        <ant inheritAll="false" dir="${wonderland.dir}" target="clean"/>
+    </target>
+
+    <target name="jar-wonderland" description="Build and jar lg3d-wonderland project"
+	    depends="init" if="wonderland.exists">
+        <ant inheritAll="false" dir="${wonderland.dir}" target="all"/>
+    </target>
+
+    <target name="install-lg3d-zip" depends="jar,jar-demoapps" if="wonderland.exists"
+	description="Bundle and install lg3d jars into wonderland dir">
+        <echo file="${build.lib.dir}/lg3d-bundle-readme.txt" message="Built/bundled on : ${build.date}"/>
+
+	<zip destfile="${zip.javaext.dir}/lg3d.zip">
+	    <zipfileset dir="${build.lib.dir}">
+		<include name="lg3d-core.jar"/>
+		<include name="lg3d-awt-toolkit.jar"/>
+		<include name="lg3d-demo-apps.jar"/>
+		<include name="lg3d-bundle-readme.txt"/>
+	    </zipfileset>
+	</zip>
+    </target>
+
+    <target name="install-escher-zip-os" if="wonderland.exists">
+	<property name="tmpdir" location="${build.platform.dir}/tmp"/>
+
+	<mkdir dir="${tmpdir}/jars"/>
+
+        <echo file="${tmpdir}/escher-bundle-readme.txt" message="Bundled on : ${build.date}"/>
+
+	<copy todir="${tmpdir}">
+	    <fileset dir="${core.ext.dir}" includes="**/escher*.LICENSE"/>
+	</copy>
+
+	<copy todir="${tmpdir}/jars">
+	    <fileset dir="${core.ext.dir}" includes="**/escher*.jar"/>
+	</copy>
+
+	<property name="escher.native.dir"
+		  location="${core.ext.dir}/escher/platform/${_os}/${_arch}/lib"/>
+	<if>
+	    <available file="${escher.native.dir}"/>
+	    <then>
+		<mkdir dir="${tmpdir}/native"/>
+		<copy todir="${tmpdir}/native">
+		    <fileset dir="${escher.native.dir}" includes="**/*.so"/>
+		</copy>
+	    </then>
+	</if>
+
+	<zip destfile="${zip.javaext.dir}/${_os}/escher.zip" basedir="${tmpdir}"/>
+	<delete dir="${tmpdir}"/>
+    </target>
+
+    <target name="install-escher-zip" if="wonderland.exists"
+	description="Bundle and install escher jars into wonderland dir">
+
+	<antcall target="install-escher-zip-os">
+	    <param name="_os" value="linux"/>
+	    <param name="_arch" value="i686"/>
+	</antcall>
+
+	<antcall target="install-escher-zip-os">
+	    <param name="_os" value="solaris"/>
+	    <param name="_arch" value="i86pc"/>
+	</antcall>
+
+	<antcall target="install-escher-zip-os">
+	    <param name="_os" value="win32"/>
+	    <param name="_arch" value="i686"/>
+	</antcall>
+
+	<antcall target="install-escher-zip-os">
+	    <param name="_os" value="macosx"/>
+	    <param name="_arch" value="i386"/>
+	</antcall>
+
+	<!-- TODO: do the 64-bit versions -->
+    </target>
+
+    <target name="install-zip" depends="install-lg3d-zip,install-escher-zip"
+		if="wonderland.exists"
+		description="Bundle and install lg3d/escher jars into wonderland dir"/>
+</project>

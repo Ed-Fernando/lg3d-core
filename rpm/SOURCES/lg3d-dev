@@ -1,0 +1,15 @@
+#!/bin/bash -f
+#export JAVA_HOME=/usr/java/lg3d/jre1.5.0_02
+#export PATH="/usr/java/lg3d/jre1.5.0_02/bin:$PATH"
+
+pkill=/usr/bin/pkill
+if [ -x /usr/bin/pkill ]; then
+  pkill=/usr/bin/pkill
+elif [ -x /usr/bin/killall ]; then
+  pkill=/usr/bin/killall
+fi
+
+/opt/lg3d/bin/lg3d-dev $@
+
+$pkill rmiregistry
+
