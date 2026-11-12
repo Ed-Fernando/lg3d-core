@@ -41,4 +41,8 @@ public class Lg3dDialogPeer extends Lg3dWindowPeer implements java.awt.peer.Dial
     public void setResizable(boolean resizeable) {
         logger.warning("setResizable not implemented");
     }
+
+    public void blockWindows(java.util.List<java.awt.Window> windows) {
+        logger.warning("blockWindows not implemented");
+    }
 }

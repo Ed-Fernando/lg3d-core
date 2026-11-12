@@ -335,12 +335,16 @@ public class Lg3dComponentPeer implements java.awt.peer.ComponentPeer, SceneMana
         peer.setEnabled(false);
     }
 
-    public void flip(BufferCapabilities.FlipContents flipContents) {
+    public void flip(int x1, int y1, int x2, int y2, BufferCapabilities.FlipContents flipContents) {
         logger.info("flip");
         if (usePeer)
-            realPeer.flip(flipContents);
+            realPeer.flip(x1, y1, x2, y2, flipContents);
         backBuffer.contentsChanged();
-   }
+    }
+
+    public void flip(BufferCapabilities.FlipContents flipContents) {
+        flip(0, 0, awtComponent.getWidth(), awtComponent.getHeight(), flipContents);
+    }
 
     public Image getBackBuffer() {
         logger.info("getBackBuffer");
@@ -742,4 +746,11 @@ public class Lg3dComponentPeer implements java.awt.peer.ComponentPeer, SceneMana
 //           return false;
 //       }
 //   } 
+
+    public void applyShape(sun.java2d.pipe.Region shape) {
+        logger.warning("applyShape not implemented");
+        if (usePeer) {
+            realPeer.applyShape(shape);
+        }
+    }
 }

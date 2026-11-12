@@ -1,0 +1,7 @@
+
+# Ant build outputs and auto-generated files
+build/
+dist/
+nbproject/nb.properties
+src/classes/org/jdesktop/lg3d/displayserver/LgBuildInfo.java
+src/etc/lg3d/build-platform

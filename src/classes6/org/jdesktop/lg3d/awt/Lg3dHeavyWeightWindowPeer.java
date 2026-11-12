@@ -97,4 +97,25 @@ public class Lg3dHeavyWeightWindowPeer extends Lg3dContainerPeer implements java
     public boolean isGrabbed() {
         return grab;
     }
+
+    public void updateAlwaysOnTopState() {
+        logger.warning("updateAlwaysOnTopState not implemented");
+        updateAlwaysOnTop();
+    }
+
+    public void setOpacity(float opacity) {
+        logger.warning("setOpacity not implemented");
+    }
+
+    public void setOpaque(boolean isOpaque) {
+        logger.warning("setOpaque not implemented");
+    }
+
+    public void updateWindow(java.awt.image.BufferedImage backBuffer) {
+        logger.warning("updateWindow not implemented");
+    }
+
+    public void repositionSecurityWarning() {
+        logger.warning("repositionSecurityWarning not implemented");
+    }
 }

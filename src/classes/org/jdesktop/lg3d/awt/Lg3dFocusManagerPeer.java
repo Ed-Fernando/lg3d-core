@@ -58,7 +58,8 @@ public class Lg3dFocusManagerPeer implements KeyboardFocusManagerPeer {
         } 
         lg3dCurrentFocusedWindow = null;
         //System.out.println();
-        osPeer.setCurrentFocusedWindow(win);
+        // In Java 6, KeyboardFocusManagerPeer no longer defines setCurrentFocusedWindow
+        // osPeer.setCurrentFocusedWindow(win);
     }
 
     public Window getCurrentFocusedWindow() {
